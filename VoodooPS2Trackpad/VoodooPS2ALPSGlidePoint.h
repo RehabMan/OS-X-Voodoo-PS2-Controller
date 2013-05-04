@@ -25,7 +25,7 @@
 
 #include "ApplePS2MouseDevice.h"
 #include "ApplePS2Device.h"
-#include <IOKit/hidsystem/IOHIPointing.h>
+#include "VoodooPS2TouchPadBase.h"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2ALPSGlidePoint Class Declaration
@@ -36,10 +36,6 @@ typedef struct ALPSStatus {
     UInt8 byte1;
     UInt8 byte2;
 } ALPSStatus_t;
-
-#define SCROLL_NONE  0
-#define SCROLL_HORIZ 1
-#define SCROLL_VERT  2
 
 #define kPacketLengthSmall  3
 #define kPacketLengthLarge  6
@@ -81,95 +77,23 @@ static const struct alps_nibble_commands alps_v3_nibble_commands[] = {
 #define ALPS_BITMAP_Y_BITS	11
 #define BITS_PER_BYTE 8
 
-class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing {
-    typedef IOHIPointing super;
+class EXPORT ApplePS2ALPSGlidePoint : public VoodooPS2TouchPadBase {
+    typedef VoodooPS2TouchPadBase super;
     OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
-private:
-    ApplePS2MouseDevice *_device;
-    bool _interruptHandlerInstalled;
-    bool _powerControlHandlerInstalled;
-    RingBuffer<UInt8, kPacketLengthMax* 32> _ringBuffer;
-    UInt32 _packetByteCount;
-    IOFixed _resolution;
-    UInt16 _touchPadVersion;
-    UInt8 _touchPadModeByte;
-
-    bool _dragging;
-    bool _edgehscroll;
-    bool _edgevscroll;
-    UInt32 _edgeaccell;
-    double _edgeaccellvalue;
-    bool _draglock;
-
-private:
-    SInt32 _xpos, _xscrollpos;
-    SInt32 _ypos, _yscrollpos;
-    SInt32 _zpos, _zscrollpos;
-    int _xdiffold, _ydiffold;
-    short _scrolling;
+protected:
     int _multiPacket;
     UInt8 _multiData[6];
     IOGBounds _bounds;
 
-protected:
     virtual void dispatchRelativePointerEventWithPacket(UInt8 *packet,
             UInt32 packetSize);
 
-    virtual void dispatchAbsolutePointerEventWithPacket(UInt8 *packet, UInt32 packetSize);
-
     virtual void getModel(ALPSStatus_t *e6, ALPSStatus_t *e7);
-
-    virtual void setAbsoluteMode();
 
     virtual void getStatus(ALPSStatus_t *status);
 
-    virtual short insideScrollArea(int x, int y);
-
-    virtual void setTapEnable(bool enable);
-
-    virtual void setTouchPadEnable(bool enable);
-
-#if _NO_TOUCHPAD_ENABLE_
-    virtual UInt32 getTouchPadData( UInt8 dataSelector );
-    virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
-                                        bool  enableStreamMode = false );
-#endif
-
-    virtual PS2InterruptResult interruptOccurred(UInt8 data);
-
-    virtual void packetReady();
-
-    virtual void setDevicePowerState(UInt32 whatToDo);
-
-    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now) {
-        dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime *) &now);
-    }
-
-    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now) {
-        dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime *) &now);
-    }
-
-protected:
-    virtual IOItemCount buttonCount();
-
-    virtual IOFixed resolution();
-
-public:
-    virtual bool init(OSDictionary *properties);
-
-    virtual ApplePS2ALPSGlidePoint *probe(IOService *provider,
-            SInt32 *score);
-
-    virtual bool start(IOService *provider);
-
-    virtual void stop(IOService *provider);
-
-    virtual UInt32 deviceType();
-
-    virtual UInt32 interfaceID();
-
-    virtual IOReturn setParamProperties(OSDictionary *dict);
+    virtual void deviceSpecificInit();
 
     bool enterCommandMode();
 
@@ -204,6 +128,34 @@ public:
     int processBitmap(unsigned int xMap, unsigned int yMap, int *x1, int *y1, int *x2, int *y2);
 
     void reportSemiMTData(int fingers, int x1, int y1, int x2, int y2);
+
+    bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7);
+
+    PS2InterruptResult interruptOccurred(UInt8 data);
+
+    void packetReady();
+
+    void setTouchPadEnable(bool enable);
+
+    void initTouchPad();
+    
+    void dispatchEventsWithInfo(int xraw, int yraw, int z, int fingers, UInt32 buttonsraw);
+
+    void calculateMovement(int x, int y, int z, int fingers, int & dx, int & dy);
+
+#if _NO_TOUCHPAD_ENABLE_
+    virtual UInt32 getTouchPadData( UInt8 dataSelector );
+    virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
+                                        bool  enableStreamMode = false );
+#endif
+
+public:
+    virtual ApplePS2ALPSGlidePoint * probe(IOService *provider,
+            SInt32 *score);
+
+    void stop(IOService *provider);
+
+    bool init(OSDictionary * dict);
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */

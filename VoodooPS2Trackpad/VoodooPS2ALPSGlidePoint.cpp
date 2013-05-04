@@ -20,9 +20,7 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-#include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
-#include <string.h>
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2ALPSGlidePoint.h"
 
@@ -32,80 +30,21 @@ enum {
 
 #define ARRAY_SIZE(x)    (sizeof(x)/sizeof(x[0]))
 #define MAX(X,Y)         ((X) > (Y) ? (X) : (Y))
+#define abs(x) ((x) < 0 ? -(x) : (x))
 
 // =============================================================================
 // ApplePS2ALPSGlidePoint Class Implementation
 //
 
-OSDefineMetaClassAndStructors(ApplePS2ALPSGlidePoint, IOHIPointing
+OSDefineMetaClassAndStructors(ApplePS2ALPSGlidePoint, VoodooPS2TouchPadBase
 );
-
-UInt32 ApplePS2ALPSGlidePoint::deviceType() {
-    return NX_EVS_DEVICE_TYPE_MOUSE;
-}
-
-UInt32 ApplePS2ALPSGlidePoint::interfaceID() {
-    return NX_EVS_DEVICE_INTERFACE_BUS_ACE;
-}
-
-IOItemCount ApplePS2ALPSGlidePoint::buttonCount() {
-    return 2;
-};
-
-IOFixed     ApplePS2ALPSGlidePoint::resolution() {
-    return _resolution;
-};
-
-bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7);
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
-    //
-    // Initialize this object's minimal state. This is invoked right after this
-    // object is instantiated.
-    //
-
-    if (!super::init(dict))
-        return false;
-
-    // find config specific to Platform Profile
-    OSDictionary *list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary *config = ApplePS2Controller::makeConfigurationNode(list);
-    if (config) {
-        // if DisableDevice is Yes, then do not load at all...
-        OSBoolean *disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-        if (disable && disable->isTrue()) {
-            config->release();
-            return false;
-        }
-#ifdef DEBUG
-        // save configuration for later/diagnostics...
-        setProperty(kMergedConfiguration, config);
-#endif
-    }
-
-    // initialize state...
-    _device = 0;
-    _interruptHandlerInstalled = false;
-    _packetByteCount = 0;
-    _resolution = (100) << 16; // (100 dpi, 4 counts/mm)
-    _touchPadModeByte = kTapEnabled;
-    _scrolling = SCROLL_NONE;
-    _zscrollpos = 0;
-
-
-    OSSafeRelease(config);
-
-    return true;
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt32 *score) {
     DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
 
-    ALPSStatus_t E6, E7;
+
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -114,10 +53,8 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     // responses expected by the commands we send it).
     //
 
-    bool success = false;
-
-    if (!super::probe(provider, score))
-        return 0;
+    ALPSStatus_t E6, E7;
+    bool success;
 
     _device = (ApplePS2MouseDevice *) provider;
     _bounds.maxx = ALPS_V3_X_MAX;
@@ -131,6 +68,10 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     success = IsItALPS(&E6, &E7);
     DEBUG_LOG("ALPS Device? %s\n", (success ? "yes" : "no"));
 
+    if (success) {
+        IOLog("%s: ALPS model 0x%02x,0x%02x,0x%02x\n", getName(), E7.byte0, E7.byte1, E7.byte2);
+    }
+
     // override
     //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
@@ -142,7 +83,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     return (success) ? this : 0;
 }
 
-bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
+bool ApplePS2ALPSGlidePoint::IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
     bool success = false;
     int version;
     static const unsigned char rates[] = {0, 10, 20, 40, 60, 80, 100, 200};
@@ -160,7 +101,7 @@ bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
 
     for (i = 0; i < ARRAY_SIZE(rates) && E7->byte2 != rates[i]; i++);// empty
     version = (E7->byte0 << 8) | (E7->byte1 << 4) | i;
-    DEBUG_LOG("Discovered touchpad version: %d\n", version);
+    DEBUG_LOG("Discovered touchpad version: 0x%x\n", version);
 
 #define NUM_SINGLES 13
     static int singles[NUM_SINGLES * 3] = {
@@ -206,109 +147,34 @@ bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2ALPSGlidePoint::start(IOService *provider) {
-    UInt64 enabledProperty;
-
-    //
-    // Must add this property to let our superclass know that it should handle
-    // trackpad acceleration settings from user space.  Without this, tracking
-    // speed adjustments from the mouse prefs panel have no effect.
-    //
-
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-
-    //
-    // The driver has been instructed to start. This is called after a
-    // successful probe and match.
-    //
-
-    if (!super::start(provider))
-        return false;
-
-    //
-    // Maintain a pointer to and retain the provider object.
-    //
-
-    _device = (ApplePS2MouseDevice *) provider;
-    _device->retain();
-
-    //
-    // Announce hardware properties.
-    //
-
-    IOLog("ApplePS2Trackpad: ALPS GlidePoint v%d.%d\n",
-            (UInt8) (_touchPadVersion >> 8), (UInt8) (_touchPadVersion));
-
-    //
-    // Advertise some supported features (tapping, edge scrolling).
-    //
-
-    enabledProperty = 1;
-
-    setProperty("Clicking", enabledProperty,
-            sizeof(enabledProperty) * 8);
-    setProperty("TrackpadScroll", enabledProperty,
-            sizeof(enabledProperty) * 8);
-    setProperty("TrackpadHorizScroll", enabledProperty,
-            sizeof(enabledProperty) * 8);
-
-    //
-    // Lock the controller during initialization
-    //
-
-    _device->lock();
-
+void ApplePS2ALPSGlidePoint::deviceSpecificInit() {
+    // TODO: add version dependant init
     if (!hwInitV3()) {
-        DEBUG_LOG("Init failed...things will probably not work\n");
+        IOLog("%s: Device initialization failed. Touchpad probably won't work", getName());
+    }
+}
+
+bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
+    if (!super::init(dict)) {
+        return false;
     }
 
-    // Enable tapping
-    // Not used in v3
-    // TODO: put in specific v1/v2 init
-//    DEBUG_LOG("enable tapping...\n");
-//    setTapEnable(true);
-
-    // Enable Absolute Mode
-    // already done in hwInitV3
-    // TODO: put in specific v1/v2 init
-//    DEBUG_LOG("enable absolute mode orig...");
-//    setAbsoluteMode();
-
-    //
-    // Finally, we enable the trackpad itself, so that it may start reporting
-    // asynchronous events.
-    //
-    // Not needed in v3(?)
-    // TODO: put in specific v1/v2 init
-//    DEBUG_LOG("touchpad enable\n");
-//    setTouchPadEnable(true);
-
-    //
-    // Enable the mouse clock (should already be so) and the mouse IRQ line.
-    //
-
-    // Should be taken care of in controller (at least that' what the logs indicate)
-    //setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-
-    //
-    // Install our driver's interrupt handler, for asynchronous data delivery.
-    //
-
-    _device->installInterruptAction(this,
-            OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2ALPSGlidePoint::interruptOccurred),
-            OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2ALPSGlidePoint::packetReady));
-    _interruptHandlerInstalled = true;
-
-    // now safe to allow other threads
-    _device->unlock();
-
-    //
-    // Install our power control handler.
-    //
-
-    _device->installPowerControlAction(this, OSMemberFunctionCast(PS2PowerControlAction, this,
-            &ApplePS2ALPSGlidePoint::setDevicePowerState));
-    _powerControlHandlerInstalled = true;
+    // Set defaults for this mouse model
+    zlimit = 255;
+    centerx = 1000;
+    centery = 700;
+    ledge = 0;
+    // Right edge, must allow for vertical scrolling
+    redge = ALPS_V3_X_MAX - 250;
+    tedge = 0;
+    bedge = ALPS_V3_Y_MAX;
+    vscrolldivisor = 1;
+    hscrolldivisor = 1;
+    divisorx = 40;
+    divisory = 40;
+    hscrolldivisor = 50;
+    vscrolldivisor = 50;
+    _buttonCount = 3;
 
     return true;
 }
@@ -316,41 +182,7 @@ bool ApplePS2ALPSGlidePoint::start(IOService *provider) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2ALPSGlidePoint::stop(IOService *provider) {
-    //
-    // The driver has been instructed to stop.  Note that we must break all
-    // connections to other service objects now (ie. no registered actions,
-    // no pointers and retains to objects, etc), if any.
-    //
-
-    assert(_device == provider);
-
-    //
-    // Disable the mouse itself, so that it may stop reporting mouse events.
-    //
-
-    // should not need to do this...just reset the mouse(?)
-//    setTouchPadEnable(false);
     resetMouse();
-
-    //
-    // Uninstall the interrupt handler.
-    //
-
-    if (_interruptHandlerInstalled) _device->uninstallInterruptAction();
-    _interruptHandlerInstalled = false;
-
-    //
-    // Uninstall the power control handler.
-    //
-
-    if (_powerControlHandlerInstalled) _device->uninstallPowerControlAction();
-    _powerControlHandlerInstalled = false;
-
-    //
-    // Release the pointer to the provider object.
-    //
-
-    OSSafeReleaseNULL(_device);
 
     super::stop(provider);
 }
@@ -427,10 +259,10 @@ void ApplePS2ALPSGlidePoint::packetReady() {
         UInt8 *packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
         if ((packet[0] & ALPS_V3_MASK0) == ALPS_V3_BYTE0) {
+            DEBUG_LOG("Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             processPacketV3(packet);
-            // dispatchAbsolutePointerEventWithPacket(packet, kPacketLengthLarge);
         } else {
-            // Ignore bare PS/2 packet for now...
+            // Ignore bare PS/2 packet for now...messes with the actual full 6-byte ALPS packet above
 //            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
         }
         _ringBuffer.advanceTail(kPacketLengthSmall);
@@ -476,13 +308,9 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     y = (SInt8) (((packet[0] & 0x10) << 3) | (packet[2] & 0x7f));
     z = (packet[4] & 0x7c) >> 2;
 
-    /*
-     * The x and y values tend to be quite large, and when used
-     * alone the trackstick is difficult to use. Scale them down
-     * to compensate.
-     */
-    x /= 8;
-    y /= 8;
+    // TODO: separate divisor for trackstick
+//    x /= divisorx;
+//    y /= divisory;
 
     clock_get_uptime(&now_abs);
 
@@ -494,9 +322,12 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     buttons |= right ? 0x02 : 0;
     buttons |= middle ? 0x04 : 0;
 
-    DEBUG_LOG("Dispatch relative pointer with x=%d, y=%d, left=%d, right=%d, middle=%d\n", x, y, left, right, middle);
-    dispatchRelativePointerEventX(x, y, buttons, now_abs);
+    // Reverse y value to get proper movement direction
+    y = -y;
 
+    DEBUG_LOG("Dispatch relative pointer with x=%d, y=%d, left=%d, right=%d, middle=%d, (z=%d, not reported)\n",
+    x, y, left, right, middle, z);
+    dispatchRelativePointerEventX(x, y, buttons, now_abs);
 }
 
 void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
@@ -576,6 +407,13 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
     right = packet[3] & 0x02;
     middle = packet[3] & 0x04;
 
+    // TODO: check version of trackpad to see if it has the
+    // ALPS_QUIRK_TRACKSTICK_BUTTONS thing
+    // This is for checking if the trackstick mouse buttons were pressed
+    left |= packet[3] & 0x10;
+    right |= packet[3] & 0x20;
+    middle |= packet[3] & 0x40;
+
     x = ((packet[1] & 0x7f) << 4) | ((packet[4] & 0x30) >> 2) |
             ((packet[0] & 0x30) >> 4);
     y = ((packet[2] & 0x7f) << 4) | (packet[4] & 0x0f);
@@ -601,12 +439,6 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         fingers = z > 0 ? 1 : 0;
     }
 
-    if (z >= 64) {
-        DEBUG_LOG("TODO: Figure out how to report BTN_TOUCH=1 here...\n");
-    } else {
-        DEBUG_LOG("TODO: Figure out how to report BTN_TOUCH=0 here...\n");
-    }
-
     reportSemiMTData(fingers, x1, y1, x2, y2);
 
     // TODO: translate the following
@@ -616,44 +448,571 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
     buttons |= right ? 0x02 : 0;
     buttons |= middle ? 0x04 : 0;
 
-    // Make sure we are still relative
-    if (z == 0 || (_zpos >= 1 && z != 0)) {
-        _xpos = x;
-        _ypos = y;
+    dispatchEventsWithInfo(x, y, z, fingers, buttons);
+}
+
+void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, int fingers, UInt32 buttonsraw) {
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
+
+    DEBUG_LOG("%s::dispatchEventsWithInfo: x=%d, y=%d, z=%d, fingers=%d, buttons=%d\n",
+    getName(), xraw, yraw, z, fingers, buttonsraw);
+
+    // scale x & y to the axis which has the most resolution
+    if (xupmm < yupmm) {
+        xraw = xraw * yupmm / xupmm;
+    } else if (xupmm > yupmm) {
+        yraw = yraw * xupmm / yupmm;
+    }
+    int x = xraw;
+    int y = yraw;
+
+    // allow middle click to be simulated the other two physical buttons
+    UInt32 buttons = buttonsraw;
+    lastbuttons = buttons;
+
+    // allow middle button to be simulated with two buttons down
+    if (!clickpadtype || fingers == 3) {
+        buttons = middleButton(buttons, now_abs, fingers == 3 ? fromPassthru : fromTrackpad);
+        DEBUG_LOG("New buttons value after check for middle click: %d\n", buttons);
     }
 
-    if (z >= 64) {
-        // NOTE: Tried the following absolute reporting but resulted in erratic mouse movement and clicking/selecting
-        /*Point newLoc;
-        newLoc.x = x;
-        newLoc.y = y;*/
-
-        // absolute mouse movement
-        /*DEBUG_LOG("Sending absolute pointer event x=%d, y=%d, z=%d, left=%d, right=%d, middle=%d\n", x, y, z, left, right, middle);
-        dispatchAbsolutePointerEvent(&newLoc,
-                &_bounds,
-                buttons,
-                1, // inRange (always assume in range...)
-                z, // pressure
-                0, // pressure min,
-                255, // pressure max (UInt8 max)
-                90, // Stylus angle
-                *(AbsoluteTime *) &now_abs);*/
-
-        // So, try just a relative mouse movement based on previous absolute position
-        int xdiff = x - _xpos;
-        int ydiff = y - _ypos;
-
-        DEBUG_LOG("Dispatch relative pointer event: x=%d, y=%d, dx=%d, dy=%d, left=%d, right=%d, middle=%d\n", x, y, xdiff, ydiff, left, right, middle);
-        dispatchRelativePointerEventX(xdiff, ydiff, buttons, now_abs);
-        _xpos = x;
-        _ypos = y;
-    } else {
-        DEBUG_LOG("reporting pressure but no movement. z=%d, left=%d, right=%d, middle=%d\n", z, left, right, middle);
-        // Only report pressure/buttons, but not new location (possibly a tapclick that we should signal with buttons=1 then 0 right after)
-        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    // recalc middle buttons if finger is going down
+    if (0 == last_fingers && fingers > 0) {
+        buttons = middleButton(buttonsraw | passbuttons, now_abs, fromCancel);
     }
-    _zpos = z == 0 ? _zpos + 1 : 0;
+
+    if (last_fingers > 0 && fingers > 0 && last_fingers != fingers) {
+        DEBUG_LOG("Start ignoring delta with finger change\n");
+        // ignore deltas for a while after finger change
+        ignoredeltas = ignoredeltasstart;
+    }
+
+    if (last_fingers != fingers) {
+        DEBUG_LOG("Finger change, reset averages\n");
+        // reset averages after finger change
+        x_undo.reset();
+        y_undo.reset();
+        x_avg.reset();
+        y_avg.reset();
+    }
+
+    // unsmooth input (probably just for testing)
+    // by default the trackpad itself does a simple decaying average (1/2 each)
+    // we can undo it here
+    if (unsmoothinput) {
+        x = x_undo.filter(x);
+        y = y_undo.filter(y);
+    }
+
+    // smooth input by unweighted average
+    if (smoothinput) {
+        x = x_avg.filter(x);
+        y = y_avg.filter(y);
+    }
+
+    if (ignoredeltas) {
+        DEBUG_LOG("Still ignoring deltas. Value=%d\n", ignoredeltas);
+        lastx = x;
+        lasty = y;
+        if (--ignoredeltas == 0) {
+            x_undo.reset();
+            y_undo.reset();
+            x_avg.reset();
+            y_avg.reset();
+        }
+    }
+
+    // deal with "OutsidezoneNoAction When Typing"
+    if (outzone_wt && z > z_finger && now_ns - keytime < maxaftertyping &&
+            (x < zonel || x > zoner || y < zoneb || y > zonet)) {
+        DEBUG_LOG("Ignore touch input after typing\n");
+        // touch input was shortly after typing and outside the "zone"
+        // ignore it...
+        return;
+    }
+
+    // double tap in "disable zone" (upper left) for trackpad enable/disable
+    //    diszctrl = 0  means automatic enable this feature if trackpad has LED
+    //    diszctrl = 1  means always enable this feature
+    //    diszctrl = -1 means always disable this feature
+    if ((0 == diszctrl && ledpresent) || 1 == diszctrl) {
+        DEBUG_LOG("checking disable zone touch. Touchmode=%d\n", touchmode);
+        // deal with taps in the disable zone
+        // look for a double tap inside the disable zone to enable/disable touchpad
+        switch (touchmode) {
+            case MODE_NOTOUCH:
+                if (isFingerTouch(z) && isInDisableZone(x, y)) {
+                    touchtime = now_ns;
+                    touchmode = MODE_WAIT1RELEASE;
+                    DEBUG_LOG("ps2: detected touch1 in disable zone\n");
+                }
+                break;
+            case MODE_WAIT1RELEASE:
+                if (z < z_finger) {
+                    DEBUG_LOG("ps2: detected untouch1 in disable zone...\n");
+                    if (now_ns - touchtime < maxtaptime) {
+                        DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
+                        untouchtime = now_ns;
+                        touchmode = MODE_WAIT2TAP;
+                    }
+                    else {
+                        DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else {
+                    if (!isInDisableZone(x, y)) {
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT1RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2TAP:
+                if (isFingerTouch(z)) {
+                    if (isInDisableZone(x, y)) {
+                        DEBUG_LOG("ps2: detected touch2 in disable zone...\n");
+                        if (now_ns - untouchtime < maxdragtime) {
+                            DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
+                            touchtime = now_ns;
+                            touchmode = MODE_WAIT2RELEASE;
+                        }
+                        else {
+                            DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
+                            touchmode = MODE_NOTOUCH;
+                        }
+                    }
+                    else {
+                        DEBUG_LOG("ps2: bad input detected in MODE_WAIT2TAP x=%d, y=%d, z=%d\n", x, y, z);
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2RELEASE:
+                if (z < z_finger) {
+                    DEBUG_LOG("ps2: detected untouch2 in disable zone...\n");
+                    if (now_ns - touchtime < maxtaptime) {
+                        DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
+                        // enable/disable trackpad here
+                        ignoreall = !ignoreall;
+                        touchpadToggled();
+                        touchmode = MODE_NOTOUCH;
+                    }
+                    else {
+                        DEBUG_LOG("ps2: not in time, ignoring... setting MODE_NOTOUCH\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else {
+                    if (!isInDisableZone(x, y)) {
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT2RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            default:; // nothing...
+        }
+        if (touchmode >= MODE_WAIT1RELEASE) {
+            DEBUG_LOG("Touchmode is WAIT1RELEASE, returning\n");
+            return;
+        }
+    }
+
+    // if trackpad input is supposed to be ignored, then don't do anything
+    if (ignoreall) {
+        DEBUG_LOG("ignoreall is set, returning\n");
+        return;
+    }
+
+    int tm1 = touchmode;
+
+    if (z < z_finger && isTouchMode()) {
+        // Finger has been lifted
+        DEBUG_LOG("finger lifted after touch\n");
+        xrest = yrest = scrollrest = 0;
+        inSwipeLeft = inSwipeRight = inSwipeUp = inSwipeDown = 0;
+        xmoved = ymoved = 0;
+        untouchtime = now_ns;
+        tracksecondary = false;
+
+        if (dy_history.count()) {
+            DEBUG_LOG("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest() - time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
+        }
+        else {
+            DEBUG_LOG("ps2: no time/dy history\n");
+        }
+
+        // check for scroll momentum start
+        if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
+            // releasing when we were in touchmode -- check for momentum scroll
+            if (dy_history.count() > momentumscrollsamplesmin &&
+                    (momentumscrollinterval = time_history.newest() - time_history.oldest())) {
+                momentumscrollsum = dy_history.sum();
+                momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
+                momentumscrollrest1 = 0;
+                momentumscrollrest2 = 0;
+                setTimerTimeout(scrollTimer, momentumscrolltimer);
+            }
+        }
+        time_history.reset();
+        dy_history.reset();
+        DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s). touchmode=%d\n", (uint64_t) (now_ns - touchtime) / 1000, now_ns - touchtime < maxtaptime ? "true" : "false", touchmode);
+        if (now_ns - touchtime < maxtaptime && clicking) {
+            switch (touchmode) {
+                case MODE_DRAG:
+                    if (!immediateclick) {
+                        buttons &= ~0x7;
+                        dispatchRelativePointerEventX(0, 0, buttons | 0x1, now_abs);
+                        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                    }
+                    if (wastriple && rtap) {
+                        buttons |= !swapdoubletriple ? 0x4 : 0x02;
+                    } else if (wasdouble && rtap) {
+                        buttons |= !swapdoubletriple ? 0x2 : 0x04;
+                    } else {
+                        buttons |= 0x1;
+                    }
+                    touchmode = MODE_NOTOUCH;
+                    break;
+
+                case MODE_DRAGLOCK:
+                    touchmode = MODE_NOTOUCH;
+                    break;
+
+                default:
+                    if (wastriple && rtap) {
+                        buttons |= !swapdoubletriple ? 0x4 : 0x02;
+                        touchmode = MODE_NOTOUCH;
+                    } else if (wasdouble && rtap) {
+                        buttons |= !swapdoubletriple ? 0x2 : 0x04;
+                        touchmode = MODE_NOTOUCH;
+                    } else {
+                        DEBUG_LOG("Detected tap click\n");
+                        buttons |= 0x1;
+                        touchmode = dragging ? MODE_PREDRAG : MODE_NOTOUCH;
+                    }
+                    break;
+            }
+        } else {
+            if ((touchmode == MODE_DRAG || touchmode == MODE_DRAGLOCK) && (draglock || draglocktemp))
+                touchmode = MODE_DRAGNOTOUCH;
+            else {
+                touchmode = MODE_NOTOUCH;
+                draglocktemp = 0;
+            }
+        }
+        wasdouble = false;
+        wastriple = false;
+    }
+
+    // cancel pre-drag mode if second tap takes too long
+    if (touchmode == MODE_PREDRAG && now_ns - untouchtime >= maxdragtime) {
+        DEBUG_LOG("cancel pre-drag since second tap took too long\n");
+        touchmode = MODE_NOTOUCH;
+    }
+
+    // Note: This test should probably be done somewhere else, especially if to
+    // implement more gestures in the future, because this information we are
+    // erasing here (time of touch) might be useful for certain gestures...
+
+    // cancel tap if touch point moves too far
+    if (isTouchMode() && isFingerTouch(z)) {
+        int dx = xraw > touchx ? xraw - touchx : touchx - xraw;
+        int dy = yraw > touchy ? touchy - yraw : yraw - touchy;
+        if (!wasdouble && !wastriple && (dx > tapthreshx || dy > tapthreshy)) {
+            touchtime = 0;
+        }
+        else if (dx > dblthreshx || dy > dblthreshy) {
+            touchtime = 0;
+        }
+    }
+
+    int tm2 = touchmode;
+    int dx = 0, dy = 0;
+
+    DEBUG_LOG("touchmode=%d\n", touchmode);
+    switch (touchmode) {
+        case MODE_DRAG:
+        case MODE_DRAGLOCK:
+            if (MODE_DRAGLOCK == touchmode || (!immediateclick || now_ns - touchtime > maxdbltaptime)) {
+                buttons |= 0x1;
+            }
+            // fall through
+        case MODE_MOVE:
+            calculateMovement(x, y, z, fingers, dx, dy);
+            break;
+
+        case MODE_MTOUCH:
+            DEBUG_LOG("detected multitouch with fingers=%d\n", fingers);
+            switch (fingers) {
+                case 1:
+                    // transition from multitouch to single touch
+                    // continue moving with the primary finger
+                    DEBUG_LOG("Transition from multitouch to single touch and move\n");
+                    calculateMovement(x, y, z, fingers, dx, dy);
+                    break;
+                case 2: // two finger
+                    ////if (palm && (w>wlimit || z>zlimit))
+                    if (last_fingers != fingers) {
+                        break;
+                    }
+                    if (palm && z > zlimit) {
+                        break;
+                    }
+//                    if (!wsticky && w<=wlimit && w>3)
+//                    {
+//                        dy_history.reset();
+//                        time_history.reset();
+//                        clickedprimary = _clickbuttons;
+//                        tracksecondary=false;
+//                        touchmode=MODE_MOVE;
+//                        break;
+//                    }
+                    if (palm_wt && now_ns - keytime < maxaftertyping) {
+                        break;
+                    }
+                    calculateMovement(x, y, z, fingers, dx, dy);
+//                    dy = (wvdivisor) ? (y - lasty + yrest) : 0;
+//                    dx = (whdivisor && hscroll) ? (lastx - x + xrest) : 0;
+//                    yrest = (wvdivisor) ? dy % wvdivisor : 0;
+//                    xrest = (whdivisor && hscroll) ? dx % whdivisor : 0;
+                    // check for stopping or changing direction
+                    if ((dy < 0) != (dy_history.newest() < 0) || dy == 0) {
+                        // stopped or changed direction, clear history
+                        dy_history.reset();
+                        time_history.reset();
+                    }
+                    // put movement and time in history for later
+                    dy_history.filter(dy);
+                    time_history.filter(now_ns);
+                    if (0 != dy || 0 != dx) {
+//                        int dv = wvdivisor ? dy / wvdivisor : 0;
+//                        int dh = (whdivisor && hscroll) ? dx / whdivisor : 0;
+                        if (!hscroll) {
+                            dx = 0;
+                        }
+                        // reverse dy to get correct movement
+                        dy = -dy;
+                        DEBUG_LOG("%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n", getName(), dy, dx);
+                        dispatchScrollWheelEventX(dy, dx, 0, now_abs);
+                        dx = dy = 0;
+                    }
+                    break;
+
+                case 3: // three finger
+                    xmoved += lastx - x;
+                    ymoved += y - lasty;
+                    // dispatching 3 finger movement
+                    if (ymoved > swipedy && !inSwipeUp) {
+                        inSwipeUp = 1;
+                        inSwipeDown = 0;
+                        ymoved = 0;
+                        DEBUG_LOG("swipe up\n");
+                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                        break;
+                    }
+                    if (ymoved < -swipedy && !inSwipeDown) {
+                        inSwipeDown = 1;
+                        inSwipeUp = 0;
+                        ymoved = 0;
+                        DEBUG_LOG("swipe down\n");
+                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                        break;
+                    }
+                    if (xmoved < -swipedx && !inSwipeRight) {
+                        inSwipeRight = 1;
+                        inSwipeLeft = 0;
+                        xmoved = 0;
+                        DEBUG_LOG("swipe right\n");
+                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
+                        break;
+                    }
+                    if (xmoved > swipedx && !inSwipeLeft) {
+                        inSwipeLeft = 1;
+                        inSwipeRight = 0;
+                        xmoved = 0;
+                        DEBUG_LOG("swipe left\n");
+                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
+                        break;
+                    }
+            }
+            break;
+
+        case MODE_VSCROLL:
+            if (!vsticky && (x < redge || fingers > 1 || z > zlimit)) {
+                DEBUG_LOG("Switch back to notoch. redge=%d, vsticky=%d, zlimit=%d\n", redge, vsticky, zlimit);
+                touchmode = MODE_NOTOUCH;
+                break;
+            }
+            if (palm_wt && now_ns - keytime < maxaftertyping) {
+                DEBUG_LOG("Ignore vscroll after typing\n");
+                break;
+            }
+            dy = ((lasty - y) / (vscrolldivisor / 100.0));
+            DEBUG_LOG("VScroll: dy=%d\n", dy);
+            dispatchScrollWheelEventX(dy, 0, 0, now_abs);
+            dy = 0;
+            break;
+
+        case MODE_HSCROLL:
+            if (!hsticky && (y < bedge || fingers > 1 || z > zlimit)) {
+                DEBUG_LOG("Switch back to notouch. bedge=%d, hsticky=%d, zlimit=%d\n", bedge, hsticky, zlimit);
+                touchmode = MODE_NOTOUCH;
+                break;
+            }
+            if (palm_wt && now_ns - keytime < maxaftertyping) {
+                DEBUG_LOG("ignore hscroll after typing\n");
+                break;
+            }
+            dx = ((lastx - x) / (hscrolldivisor / 100.0));
+            DEBUG_LOG("HScroll: dx=%d\n", dx);
+            dispatchScrollWheelEventX(0, dx, 0, now_abs);
+            dx = 0;
+            break;
+
+        case MODE_CSCROLL:
+            if (palm_wt && now_ns - keytime < maxaftertyping) {
+                break;
+            }
+            
+            if (y < centery) {
+                dx = x - lastx;
+            }
+            else {
+                dx = lastx - x;
+            }
+            
+            if (x < centerx) {
+                dx += lasty - y;
+            }
+            else {
+                dx += y - lasty;
+            }
+            DEBUG_LOG("CScroll: %d\n", (dx + scrollrest) / cscrolldivisor);
+            dispatchScrollWheelEventX((dx + scrollrest) / cscrolldivisor, 0, 0, now_abs);
+            scrollrest = (dx + scrollrest) % cscrolldivisor;
+            dx = 0;
+            break;
+
+        case MODE_DRAGNOTOUCH:
+            buttons |= 0x1;
+            DEBUG_LOG("dragnotouch. buttons=%d\n", buttons);
+            // fall through
+        case MODE_PREDRAG:
+            if (!immediateclick && (!palm_wt || now_ns - keytime >= maxaftertyping)) {
+                buttons |= 0x1;
+                DEBUG_LOG("predrag button change: %d\n", buttons);
+            }
+        case MODE_NOTOUCH:
+            break;
+
+        default:; // nothing
+    }
+
+    // capture time of tap, and watch for double/triple tap
+    if (isFingerTouch(z)) {
+        DEBUG_LOG("isFingerTouch\n");
+        // taps don't count if too close to typing or if currently in momentum scroll
+        if ((!palm_wt || now_ns - keytime >= maxaftertyping) && !momentumscrollcurrent) {
+            if (!isTouchMode()) {
+                DEBUG_LOG("Set touchtime to now=%llu, x=%d, y=%d, fingers=%d", now_ns, x, y, fingers);
+                touchtime = now_ns;
+                touchx = x;
+                touchy = y;
+            }
+            ////if (w>wlimit || w<3)
+            if (fingers == 2) {
+                wasdouble = true;
+            } else if (_buttonCount >= 3 && fingers == 3) {
+                wastriple = true;
+            }
+        }
+        // any touch cancels momentum scroll
+        momentumscrollcurrent = 0;
+    }
+
+    // switch modes, depending on input
+    if (touchmode == MODE_PREDRAG && isFingerTouch(z)) {
+        DEBUG_LOG("Switch from pre-drag to drag\n");
+        touchmode = MODE_DRAG;
+        draglocktemp = _modifierdown & draglocktempmask;
+    }
+    if (touchmode == MODE_DRAGNOTOUCH && isFingerTouch(z)) {
+        DEBUG_LOG("switch from dragnotouch to drag lock\n");
+        touchmode = MODE_DRAGLOCK;
+    }
+    ////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
+    if (MODE_MTOUCH != touchmode && (fingers > 1) && isFingerTouch(z)) {
+        DEBUG_LOG("switch to multitouch mode\n");
+        touchmode = MODE_MTOUCH;
+        tracksecondary = false;
+    }
+
+    if (scroll && cscrolldivisor) {
+        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && (ctrigger == 1 || ctrigger == 9))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && x > redge && (ctrigger == 2))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && (ctrigger == 3 || ctrigger == 9))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && y < bedge && (ctrigger == 4))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && (ctrigger == 5 || ctrigger == 9))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && x < ledge && (ctrigger == 6))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && (ctrigger == 7 || ctrigger == 9))
+            touchmode = MODE_CSCROLL;
+        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && y > tedge && (ctrigger == 8))
+            touchmode = MODE_CSCROLL;
+
+        DEBUG_LOG("new touchmode=%d\n", touchmode);
+    }
+    if ((MODE_NOTOUCH == touchmode || (MODE_HSCROLL == touchmode && y >= bedge)) &&
+            z > z_finger && x > redge && vscrolldivisor && scroll) {
+        DEBUG_LOG("switch to vscroll touchmode\n");
+        touchmode = MODE_VSCROLL;
+        scrollrest = 0;
+    }
+    if ((MODE_NOTOUCH == touchmode || (MODE_VSCROLL == touchmode && x <= redge)) &&
+            z > z_finger && y > bedge && hscrolldivisor && hscroll && scroll) {
+        DEBUG_LOG("switch to hscroll touchmode\n");
+        touchmode = MODE_HSCROLL;
+        scrollrest = 0;
+    }
+    if (touchmode == MODE_NOTOUCH && z > z_finger) {
+        touchmode = MODE_MOVE;
+    }
+
+    // dispatch dx/dy and current button status
+    dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
+
+    // always save last seen position for calculating deltas later
+    lastx = x;
+    lasty = y;
+    last_fingers = fingers;
+
+    DEBUG_LOG("ps2: dx=%d, dy=%d (%d,%d) z=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, tm1, tm2, touchmode, buttons, wasdouble);
+}
+
+void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers, int &dx, int &dy) {
+    if (last_fingers == fingers && (!palm || (z <= zlimit))) {
+        dx = x - lastx;
+        dy = y - lasty;
+        DEBUG_LOG("before: dx=%d, dy=%d\n", dx, dy);
+        dx = (dx / (divisorx / 100.0));
+        dy = (dy / (divisory / 100.0));
+        // Don't worry about rest of divisor value for now...not signigicant enough
+//        xrest = dx % divisorx;
+//        yrest = dy % divisory;
+        // This was in the original version but not sure why...seems OK if
+        // the user is moving fast, at least on the ALPS hardware here
+//        if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh) {
+//            dx = dy = xrest = yrest = 0;
+//        }
+    }
 }
 
 int ApplePS2ALPSGlidePoint::processBitmap(unsigned int xMap, unsigned int yMap, int *x1, int *y1, int *x2, int *y2) {
@@ -774,138 +1133,11 @@ void ApplePS2ALPSGlidePoint::reportSemiMTData(int fingers, int x1, int y1, int x
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(UInt8 *packet, UInt32 packetSize) {
-    DEBUG_LOG("Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
-    UInt32 buttons = 0;
-    int left = 0, right = 0, middle = 0;
-    int xdiff, ydiff;
-    short scroll;
-    uint64_t now_abs;
-    bool wasNotScrolling, willScroll;
-
-    if (packet[5] == 0x3f) {
-        DEBUG_LOG("%s:: TODO: process ALPS V3 trackstick packet...\n", getName());
-    }
-
-    int x = ((packet[1] & 0x7f) << 4) | ((packet[4] & 0x30) >> 2) |
-            ((packet[0] & 0x30) >> 4);
-    int y = ((packet[2] & 0x7f) << 4) | (packet[4] & 0x0f);
-    int z = packet[5] & 0x7f;
-//    int x = (packet[1] & 0x7f) | ((packet[2] & 0x78) << (7 - 3));
-//    int y = (packet[4] & 0x7f) | ((packet[3] & 0x70) << (7 - 4));
-//    int z = packet[5]; // touch pression
-
-    clock_get_uptime(&now_abs);
-
-    left = packet[3] & 0x01;
-    right = packet[3] & 0x02;
-    middle = packet[3] & 0x04;
-//    left |= (packet[2]) & 1;
-//    left |= (packet[3]) & 1;
-//    right |= (packet[3] >> 1) & 1;
-
-//    if (packet[0] != 0xff) {
-//        left |= (packet[0]) & 1;
-//        right |= (packet[0] >> 1) & 1;
-//        middle |= (packet[0] >> 2) & 1;
-//        middle |= (packet[3] >> 2) & 1;
-//    }
-
-    buttons |= left ? 0x01 : 0;
-    buttons |= right ? 0x02 : 0;
-    buttons |= middle ? 0x04 : 0;
-
-    /*
-     * Sometimes the hardware sends a single packet with z = 0
-     * in the middle of a stream. Real releases generate packets
-     * with x, y, and z all zero, so these seem to be flukes.
-     * Ignore them.
-     */
-    if (x && y && !z) {
-        DEBUG_LOG("%s: x and y were set but not z...not going to process\n", getName());
-        return;
-    }
-
-    /*DEBUG_LOG("Absolute packet: x: %d, y: %d, xpos: %d, ypos: %d, buttons: %x, "
-              "z: %d, zpos: %d\n", x, y, (int)_xpos, (int)_ypos, (int)buttons,
-              (int)z, (int)_zpos);*/
-
-    wasNotScrolling = _scrolling == SCROLL_NONE;
-    scroll = insideScrollArea(x, y);
-
-    willScroll = ((scroll & SCROLL_VERT) && _edgevscroll) ||
-            ((scroll & SCROLL_HORIZ) && _edgehscroll);
-
-    // Make sure we are still relative
-    if (z == 0 || (_zpos >= 1 && z != 0 && !willScroll)) {
-        _xpos = x;
-        _ypos = y;
-    }
-
-    // Are we scrolling?
-    if (willScroll) {
-        if (_zscrollpos <= 0 || wasNotScrolling) {
-            _xscrollpos = x;
-            _yscrollpos = y;
-        }
-
-        xdiff = x - _xscrollpos;
-        ydiff = y - _yscrollpos;
-
-        ydiff = (scroll == SCROLL_VERT) ? -((int) ((double) ydiff * _edgeaccellvalue)) : 0;
-        xdiff = (scroll == SCROLL_HORIZ) ? -((int) ((double) xdiff * _edgeaccellvalue)) : 0;
-
-        // Those "if" should provide angle tapping (simulate click on up/down
-        // buttons of a scrollbar), but i have to investigate more on the values,
-        // since currently they don't work...
-        if (ydiff == 0 && scroll == SCROLL_HORIZ)
-            ydiff = ((x >= 950 ? 25 : (x <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));
-
-        if (xdiff == 0 && scroll == SCROLL_VERT)
-            xdiff = ((y >= 950 ? 25 : (y <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));
-
-        dispatchScrollWheelEventX(ydiff, xdiff, 0, now_abs);
-        _zscrollpos = z;
-        return;
-    }
-
-    _zpos = z == 0 ? _zpos + 1 : 0;
-    _scrolling = SCROLL_NONE;
-
-    xdiff = x - _xpos;
-    ydiff = y - _ypos;
-
-    _xpos = x;
-    _ypos = y;
-
-    DEBUG_LOG("Sending event: %d,%d,%d\n", xdiff, ydiff, (int) buttons);
-    dispatchRelativePointerEventX(xdiff, ydiff, buttons, now_abs);
-}
-
-short ApplePS2ALPSGlidePoint::insideScrollArea(int x, int y) {
-    DEBUG_LOG("Checking scroll [x, y]=[%d, %d]\n", x, y);
-    short scroll = 0;
-    if (x > 900) scroll |= SCROLL_VERT;
-    if (y > 650) scroll |= SCROLL_HORIZ;
-
-    if (x > 900 && y > 650) {
-        if (_scrolling == SCROLL_VERT)
-            scroll = SCROLL_VERT;
-        else
-            scroll = SCROLL_HORIZ;
-    }
-
-    _scrolling = scroll;
-    return scroll;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 void ApplePS2ALPSGlidePoint::
 dispatchRelativePointerEventWithPacket(UInt8 *packet,
                 UInt32 packetSize) {
     //
-    // Process the three byte relative format packet that was retreived from the
+    // Process the three byte relative format packet that was retrieved from the
     // trackpad. The format of the bytes is as follows:
     //
     //  7  6  5  4  3  2  1  0
@@ -940,53 +1172,6 @@ dispatchRelativePointerEventWithPacket(UInt8 *packet,
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2ALPSGlidePoint::setTapEnable(bool enable) {
-    DEBUG_LOG("setTapEnable enter\n");
-    //
-    // Instructs the trackpad to honor or ignore tapping
-    //
-
-    ALPSStatus_t Status;
-    getStatus(&Status);
-    if (Status.byte0 & 0x04) {
-        DEBUG_LOG("Tapping can only be toggled.\n");
-        enable = false;
-    }
-
-    UInt8 cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution;
-    UInt8 arg = enable ? 0x0A : 0x00;
-
-    TPS2Request<10> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_GetMouseInformation; //sync..
-    request.commands[1].command = kPS2C_ReadDataPort;
-    request.commands[1].inOrOut = 0;
-    request.commands[2].command = kPS2C_ReadDataPort;
-    request.commands[2].inOrOut = 0;
-    request.commands[3].command = kPS2C_ReadDataPort;
-    request.commands[3].inOrOut = 0;
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[6].inOrOut = cmd;
-    request.commands[7].command = kPS2C_WriteCommandPort;
-    request.commands[7].inOrOut = kCP_TransmitToMouse;
-    request.commands[8].command = kPS2C_WriteDataPort;
-    request.commands[8].inOrOut = arg;
-    request.commands[9].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[9].inOrOut = kSC_Acknowledge;
-    request.commandsCount = 10;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-
-    getStatus(&Status);
-    DEBUG_LOG("setTapEnable exit\n");
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
     DEBUG_LOG("setTouchpadEnable enter\n");
     //
@@ -994,125 +1179,16 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
     // It is safe to issue this request from the interrupt/completion context.
     //
 
-    // (mouse enable/disable command)
-    TPS2Request<5> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
-
-    // (mouse or pad enable/disable command)
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = enable ? kDP_Enable : kDP_SetDefaultsAndDisable;
-    request.commandsCount = 5;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    DEBUG_LOG("setTouchpadEnable exit\n");
+    if (enable) {
+        initTouchPad();
+    } else {
+        // to disable just reset the mouse
+        resetMouse();
+    }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-IOReturn ApplePS2ALPSGlidePoint::setParamProperties(OSDictionary *dict) {
-    OSNumber *clicking = OSDynamicCast(OSNumber, dict->getObject("Clicking"));
-    OSNumber *dragging = OSDynamicCast(OSNumber, dict->getObject("Dragging"));
-    OSNumber *draglock = OSDynamicCast(OSNumber, dict->getObject("DragLock"));
-    OSNumber *hscroll = OSDynamicCast(OSNumber, dict->getObject("TrackpadHorizScroll"));
-    OSNumber *vscroll = OSDynamicCast(OSNumber, dict->getObject("TrackpadScroll"));
-    OSNumber *eaccell = OSDynamicCast(OSNumber, dict->getObject("HIDTrackpadScrollAcceleration"));
-
-    OSCollectionIterator *iter = OSCollectionIterator::withCollection(dict);
-    OSObject *obj;
-
-    iter->reset();
-    while ((obj = iter->getNextObject()) != NULL) {
-        OSString *str = OSDynamicCast(OSString, obj);
-        OSNumber *val = OSDynamicCast(OSNumber, dict->getObject(str));
-
-        if (val)
-        DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(),
-        str->getCStringNoCopy(), val->unsigned32BitValue());
-        else
-                DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(),
-                str->getCStringNoCopy());
-    }
-    if (clicking) {
-        UInt8 newModeByteValue = clicking->unsigned32BitValue() & 0x1 ?
-                kTapEnabled :
-                0;
-
-        if (_touchPadModeByte != newModeByteValue) {
-            _touchPadModeByte = newModeByteValue;
-            // Only for v1/v2
-//            setTapEnable(_touchPadModeByte);
-            setProperty("Clicking", clicking);
-        }
-    }
-
-    if (dragging) {
-        _dragging = dragging->unsigned32BitValue() & 0x1 ? true : false;
-        setProperty("Dragging", dragging);
-    }
-
-    if (draglock) {
-        _draglock = draglock->unsigned32BitValue() & 0x1 ? true : false;
-        setProperty("DragLock", draglock);
-    }
-
-    if (hscroll) {
-        _edgehscroll = hscroll->unsigned32BitValue() & 0x1 ? true : false;
-        setProperty("TrackpadHorizScroll", hscroll);
-    }
-
-    if (vscroll) {
-        _edgevscroll = vscroll->unsigned32BitValue() & 0x1 ? true : false;
-        setProperty("TrackpadScroll", vscroll);
-    }
-    if (eaccell) {
-        _edgeaccell = eaccell->unsigned32BitValue();
-        _edgeaccellvalue = (((double) (_edgeaccell / 1966.08)) / 75.0);
-        _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
-        setProperty("HIDTrackpadScrollAcceleration", eaccell);
-    }
-
-    return super::setParamProperties(dict);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2ALPSGlidePoint::setDevicePowerState(UInt32 whatToDo) {
-    // TODO: not sure what to do here to enable or disable for v3
-    switch (whatToDo) {
-        case kPS2C_DisableDevice:
-            DEBUG_LOG("setDevicePowerState - disable\n");
-
-            //
-            // Disable touchpad.
-            //
-
-            //setTouchPadEnable(false);
-            break;
-
-        case kPS2C_EnableDevice:
-            DEBUG_LOG("setDevicePowerState - enable\n");
-
-//            setTapEnable(_touchPadModeByte);
-
-            //
-            // Finally, we enable the trackpad itself, so that it may
-            // start reporting asynchronous events.
-            //
-            absoluteModeV3();
-
-            _ringBuffer.reset();
-            _packetByteCount = 0;
-
-            //setTouchPadEnable(true);
-            break;
-    }
+void ApplePS2ALPSGlidePoint::initTouchPad() {
+    deviceSpecificInit();
 }
 
 void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {
@@ -1213,26 +1289,6 @@ void ApplePS2ALPSGlidePoint::getModel(ALPSStatus_t *E6, ALPSStatus_t *E7) {
     DEBUG_LOG("E7 report: [%02x %02x %02x]\n", request.commands[6].inOrOut, request.commands[7].inOrOut, request.commands[8].inOrOut);
 }
 
-void ApplePS2ALPSGlidePoint::setAbsoluteMode() {
-    // (read command byte)
-    TPS2Request<6> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = kDP_Enable;
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = 0xF0; //Set poll ??!
-    request.commandsCount = 6;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-}
-
 bool ApplePS2ALPSGlidePoint::enterCommandMode() {
     DEBUG_LOG("enter command mode start\n");
     TPS2Request<8> request;
@@ -1287,7 +1343,7 @@ bool ApplePS2ALPSGlidePoint::exitCommandMode() {
 
 bool ApplePS2ALPSGlidePoint::hwInitV3() {
     // Following linux alps.c alps_hw_init_v3
-    DEBUG_LOG("init v3 enter\n");
+    IOLog("Initializing TouchPad hardware...this may take a second.\n");
 
     int regVal;
     TPS2Request<10> request;
@@ -1435,7 +1491,7 @@ bool ApplePS2ALPSGlidePoint::hwInitV3() {
     DEBUG_LOG("set sample rate\n");
     setSampleRateAndResolution(0x64, 0x02);
 
-    DEBUG_LOG("hw init complete\n");
+    IOLog("TouchPad initialization complete\n");
     return true;
 
     error_passthrough:

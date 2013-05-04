@@ -46,6 +46,7 @@
 		84EB0AE516F0AD9600016108 /* ApplePS2MouseDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */; };
 		84F424E3161B59E500777765 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C3161B593D00777765 /* Cocoa.framework */; };
 		84F424E4161B59E500777765 /* PreferencePanes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C5161B593D00777765 /* PreferencePanes.framework */; };
+		BA560D361734DFF100914439 /* Decay.h in Headers */ = {isa = PBXBuildFile; fileRef = BA560D351734DFF100914439 /* Decay.h */; };
 		BA5C70CF17338E7000E30E1A /* VoodooPS2TouchPadBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C3F4F41B76902F9877062D93 /* VoodooPS2TouchPadBase.cpp */; };
 		BA5C70D017338E8600E30E1A /* VoodooPS2TouchPadBase.h in Headers */ = {isa = PBXBuildFile; fileRef = C3F4F859C067FD563476F515 /* VoodooPS2TouchPadBase.h */; };
 /* End PBXBuildFile section */
@@ -109,6 +110,8 @@
 		84F424D1161B593D00777765 /* VoodooPS2synapticsPane.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooPS2synapticsPane.h; sourceTree = "<group>"; };
 		84F424D2161B593D00777765 /* VoodooPS2synapticsPane.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VoodooPS2synapticsPane.m; sourceTree = "<group>"; };
 		84F424D4161B593D00777765 /* VoodooPS2synapticsPane.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = VoodooPS2synapticsPane.tiff; sourceTree = "<group>"; };
+		BA560D351734DFF100914439 /* Decay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Decay.h; sourceTree = "<group>"; };
+		BAEE1D1717376C1C00FCD24B /* org.voodoo.SynapticsTouchpad.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = org.voodoo.SynapticsTouchpad.plist; sourceTree = "<group>"; };
 		C3F4F41B76902F9877062D93 /* VoodooPS2TouchPadBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2TouchPadBase.cpp; sourceTree = "<group>"; };
 		C3F4F45A48A3472B873C82AD /* VoodooPS2Mouse.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = VoodooPS2Mouse.kext; path = "../../Library/Caches/appCode20/DerivedData/VoodooPS2Controller-5fc0befb/Build/Products/Debug/VoodooPS2Mouse.kext"; sourceTree = "<group>"; };
 		C3F4F603A234F724795A2FBD /* VoodooPS2Trackpad.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; name = VoodooPS2Trackpad.kext; path = "../../Library/Caches/appCode20/DerivedData/VoodooPS2Controller-5fc0befb/Build/Products/Debug/VoodooPS2Trackpad.kext"; sourceTree = "<group>"; };
@@ -299,6 +302,7 @@
 				84167857161B56C4002C60E6 /* Supporting Files */,
 				C3F4F41B76902F9877062D93 /* VoodooPS2TouchPadBase.cpp */,
 				C3F4F859C067FD563476F515 /* VoodooPS2TouchPadBase.h */,
+				BA560D351734DFF100914439 /* Decay.h */,
 			);
 			path = VoodooPS2Trackpad;
 			sourceTree = "<group>";
@@ -362,6 +366,7 @@
 				84833FBD161B632400845294 /* synapticsconfigload_Prefix.pch */,
 				84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */,
 				84833FBE161B632400845294 /* synapticsconfigload.m */,
+				BAEE1D1717376C1C00FCD24B /* org.voodoo.SynapticsTouchpad.plist */,
 			);
 			path = synapticsconfigload;
 			sourceTree = "<group>";
@@ -420,6 +425,7 @@
 				84833FB4161B62A900845294 /* VoodooPS2SentelicFSP.h in Headers */,
 				84833FB6161B62A900845294 /* VoodooPS2SynapticsTouchPad.h in Headers */,
 				BA5C70D017338E8600E30E1A /* VoodooPS2TouchPadBase.h in Headers */,
+				BA560D361734DFF100914439 /* Decay.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

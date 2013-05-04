@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84167840161B56A2002C60E6"
-               BuildableName = "VoodooPS2Mouse.kext"
+               BuildableName = "VoodooPS2Mouse"
                BlueprintName = "VoodooPS2Mouse"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>

@@ -1,45 +1,28 @@
-/*
- * Copyright (c) 2002 Apple Computer, Inc. All rights reserved.
- *
- * @APPLE_LICENSE_HEADER_START@
- * 
- * The contents of this file constitute Original Code as defined in and
- * are subject to the Apple Public Source License Version 1.2 (the
- * "License").  You may not use this file except in compliance with the
- * License.  Please obtain a copy of the License at
- * http://www.apple.com/publicsource and read it before using this file.
- * 
- * This Original Code and all software distributed under the License are
- * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
- * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
- * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT.  Please see the
- * License for the specific language governing rights and limitations
- * under the License.
- * 
- * @APPLE_LICENSE_HEADER_END@
- */
+//
+// Created by Brandon Pedersen on 5/1/13.
+//
 
-#ifndef _APPLEPS2SYNAPTICSTOUCHPAD_H
-#define _APPLEPS2SYNAPTICSTOUCHPAD_H
+#ifndef __VoodooPS2TouchPadBase_H_
+#define __VoodooPS2TouchPadBase_H_
 
 #include "ApplePS2MouseDevice.h"
+#include <IOKit/IOTimerEventSource.h>
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include "Decay.h"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ApplePS2SynapticsTouchPad Class Declaration
+// VoodooPS2TouchPadBase Class Declaration
 //
 
 #define kPacketLength 6
 
-class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
+class EXPORT VoodooPS2TouchPadBase : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
-    
-private:
+    OSDeclareAbstractStructors(VoodooPS2TouchPadBase);
+
+protected:
     ApplePS2MouseDevice * _device;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
@@ -48,11 +31,9 @@ private:
     UInt32              _packetByteCount;
     UInt8               _lastdata;
     UInt16              _touchPadVersion;
-    UInt8               _touchPadType; // from identify: either 0x46 or 0x47
-    UInt8               _touchPadModeByte;
-    
+
     IOCommandGate*      _cmdGate;
-    
+
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
@@ -105,9 +86,9 @@ private:
     uint8_t inSwipeLeft, inSwipeRight;
     uint8_t inSwipeUp, inSwipeDown;
     int xmoved, ymoved;
-    
+
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
-    
+
     // state related to secondary packets/extendedwmode
     int lastx2, lasty2;
     bool tracksecondary;
@@ -116,7 +97,7 @@ private:
     bool _extendedwmode;
 
     // normal state
-	int lastx, lasty, lastf;
+	int lastx, lasty, last_fingers;
     UInt32 lastbuttons;
     int ignoredeltas;
 	int xrest, yrest, scrollrest;
@@ -137,13 +118,13 @@ private:
     UInt32 _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
     bool usb_mouse_stops_trackpad;
-    
+
     int _modifierdown; // state of left+right control keys
     int scrollzoommask;
-    
+
     // for scaling x/y values
     int xupmm, yupmm;
-    
+
     // for middle button simulation
     enum mbuttonstate
     {
@@ -153,7 +134,7 @@ private:
         STATE_WAIT4NONE,
         STATE_NOOP,
     } _mbuttonstate;
-    
+
     UInt32 _pendingbuttons;
     uint64_t _buttontime;
     IOTimerEventSource* _buttonTimer;
@@ -175,21 +156,21 @@ private:
     int momentumscrolldivisor;
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
-    
+
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
-    
+
     SimpleAverage<int, 3> x2_avg;
     SimpleAverage<int, 3> y2_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y2_undo;
-    
+
 	enum
     {
         // "no touch" modes... must be even (see isTouchMode)
@@ -205,60 +186,51 @@ private:
         MODE_MTOUCH =       9,
         MODE_DRAG =         11,
         MODE_DRAGLOCK =     13,
-        
+
         // special modes for double click in LED area to enable/disable
         // same "touch"/"no touch" odd/even rule (see isTouchMode)
         MODE_WAIT1RELEASE = 101,    // "touch"
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
-    
+
     inline bool isTouchMode() { return touchmode & 1; }
-    
+
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
-	
+
     // Sony: coordinates captured from single touch event
     // Don't know what is the exact value of x and y on edge of touchpad
     // the best would be { return x > xmax/2 && y < ymax/4; }
 
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
-        
-    virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
-    virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
-    // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
-    
-    virtual void   setTouchPadEnable( bool enable );
-    virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
-    virtual bool   getTouchPadStatus(  UInt8 buf3[] );
-    virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
-	virtual PS2InterruptResult interruptOccurred(UInt8 data);
-    virtual void packetReady();
+
+    virtual void   setTouchPadEnable( bool enable ) = 0;
+	virtual PS2InterruptResult interruptOccurred(UInt8 data) = 0;
+    virtual void packetReady() = 0;
     virtual void   setDevicePowerState(UInt32 whatToDo);
-    
+
     virtual void   receiveMessage(int message, void* data);
-    
-    void updateTouchpadLED();
-    bool setTouchpadLED(UInt8 touchLED);
-    bool setTouchpadModeByte();
+
+    virtual void touchpadToggled() {};
+    virtual void touchpadShutdown() {};
     void initTouchPad();
-    
+
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
-    
+
     void onScrollTimer(void);
-    void queryCapabilities(void);
-    
+
     void onButtonTimer(void);
-    
+
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
-    UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
-    
+    UInt32 middleButton(UInt32 buttons, uint64_t now, MBComingFrom from);
+
     void setParamPropertiesGated(OSDictionary* dict);
 
-protected:
 	virtual IOItemCount buttonCount();
 	virtual IOFixed     resolution();
+    virtual void deviceSpecificInit() = 0;
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
@@ -267,14 +239,14 @@ protected:
         { timer->setTimeout(*(AbsoluteTime*)&time); }
     inline void cancelTimer(IOTimerEventSource* timer)
         { timer->cancelTimeout(); }
-    
+
 public:
     virtual bool init( OSDictionary * properties );
-    virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
-                                               SInt32 *    score );
+    virtual VoodooPS2TouchPadBase * probe( IOService * provider,
+                                               SInt32 *    score ) = 0;
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
-    
+
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
 
@@ -282,4 +254,4 @@ public:
 	virtual IOReturn setProperties(OSObject *props);
 };
 
-#endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */
+#endif //__VoodooPS2TouchPadBase_H_
