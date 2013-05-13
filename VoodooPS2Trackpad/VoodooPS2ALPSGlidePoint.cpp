@@ -781,10 +781,18 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     break;
 
                 case 3: // three finger
-                    xmoved += lastx - x;
-                    ymoved += y - lasty;
+                    // Calculate movement since last interrupt
+                    calculateMovement(x, y, z, fingers, dx, dy);
+                    // Now calculate total movement since 3 fingers down (add to total)
+                    xmoved += dx;
+                    ymoved += dy;
+                    DEBUG_LOG("xmoved=%d, ymoved=%d, inSwipeUp=%d, inSwipeRight=%d, inSwipeLeft=%d, inSwipeDown=%d\n", xmoved, ymoved, inSwipeUp, inSwipeRight, inSwipeLeft, inSwipeDown);
+                    // Reset relative movement so we don't actually report that
+                    // there was regular movement
+                    dx = 0;
+                    dy = 0;
                     // dispatching 3 finger movement
-                    if (ymoved > swipedy && !inSwipeUp) {
+                    if (ymoved < -swipedy && !inSwipeUp) {
                         inSwipeUp = 1;
                         inSwipeDown = 0;
                         ymoved = 0;
@@ -792,7 +800,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
                         break;
                     }
-                    if (ymoved < -swipedy && !inSwipeDown) {
+                    if (ymoved > swipedy && !inSwipeDown) {
                         inSwipeDown = 1;
                         inSwipeUp = 0;
                         ymoved = 0;
@@ -800,7 +808,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
                         break;
                     }
-                    if (xmoved < -swipedx && !inSwipeRight) {
+                    if (xmoved > swipedx && !inSwipeRight) {
                         inSwipeRight = 1;
                         inSwipeLeft = 0;
                         xmoved = 0;
@@ -808,7 +816,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
                         break;
                     }
-                    if (xmoved > swipedx && !inSwipeLeft) {
+                    if (xmoved < -swipedx && !inSwipeLeft) {
                         inSwipeLeft = 1;
                         inSwipeRight = 0;
                         xmoved = 0;
@@ -896,12 +904,11 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         // taps don't count if too close to typing or if currently in momentum scroll
         if ((!palm_wt || now_ns - keytime >= maxaftertyping) && !momentumscrollcurrent) {
             if (!isTouchMode()) {
-                DEBUG_LOG("Set touchtime to now=%llu, x=%d, y=%d, fingers=%d", now_ns, x, y, fingers);
+                DEBUG_LOG("Set touchtime to now=%llu, x=%d, y=%d, fingers=%d\n", now_ns, x, y, fingers);
                 touchtime = now_ns;
                 touchx = x;
                 touchy = y;
             }
-            ////if (w>wlimit || w<3)
             if (fingers == 2) {
                 wasdouble = true;
             } else if (fingers == 3) {
@@ -973,7 +980,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     lasty = y;
     last_fingers = fingers;
 
-    DEBUG_LOG("ps2: dx=%d, dy=%d (%d,%d) z=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, tm1, tm2, touchmode, buttons, wasdouble);
+    DEBUG_LOG("ps2: dx=%d, dy=%d (%d,%d) z=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d wastriple=%d\n", dx, dy, x, y, z, tm1, tm2, touchmode, buttons, wasdouble, wastriple);
 }
 
 void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers, int &dx, int &dy) {
