@@ -215,7 +215,7 @@ protected:
 
     virtual void touchpadToggled() {};
     virtual void touchpadShutdown() {};
-    void initTouchPad();
+    virtual void initTouchPad();
 
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
 
