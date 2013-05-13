@@ -127,7 +127,6 @@ protected:
 
     int processBitmap(unsigned int xMap, unsigned int yMap, int *x1, int *y1, int *x2, int *y2);
 
-    void reportSemiMTData(int fingers, int x1, int y1, int x2, int y2);
 
     bool isItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7);
 
@@ -142,12 +141,6 @@ protected:
     void dispatchEventsWithInfo(int xraw, int yraw, int z, int fingers, UInt32 buttonsraw);
 
     void calculateMovement(int x, int y, int z, int fingers, int & dx, int & dy);
-
-#if _NO_TOUCHPAD_ENABLE_
-    virtual UInt32 getTouchPadData( UInt8 dataSelector );
-    virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
-                                        bool  enableStreamMode = false );
-#endif
 
 public:
     virtual ApplePS2ALPSGlidePoint * probe(IOService *provider,

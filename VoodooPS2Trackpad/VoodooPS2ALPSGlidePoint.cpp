@@ -439,11 +439,6 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         fingers = z > 0 ? 1 : 0;
     }
 
-    reportSemiMTData(fingers, x1, y1, x2, y2);
-
-    // TODO: translate the following
-    // input_mt_report_finger_count(dev, fingers);
-
     buttons |= left ? 0x01 : 0;
     buttons |= right ? 0x02 : 0;
     buttons |= middle ? 0x04 : 0;
@@ -754,30 +749,16 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     calculateMovement(x, y, z, fingers, dx, dy);
                     break;
                 case 2: // two finger
-                    ////if (palm && (w>wlimit || z>zlimit))
                     if (last_fingers != fingers) {
                         break;
                     }
                     if (palm && z > zlimit) {
                         break;
                     }
-//                    if (!wsticky && w<=wlimit && w>3)
-//                    {
-//                        dy_history.reset();
-//                        time_history.reset();
-//                        clickedprimary = _clickbuttons;
-//                        tracksecondary=false;
-//                        touchmode=MODE_MOVE;
-//                        break;
-//                    }
                     if (palm_wt && now_ns - keytime < maxaftertyping) {
                         break;
                     }
                     calculateMovement(x, y, z, fingers, dx, dy);
-//                    dy = (wvdivisor) ? (y - lasty + yrest) : 0;
-//                    dx = (whdivisor && hscroll) ? (lastx - x + xrest) : 0;
-//                    yrest = (wvdivisor) ? dy % wvdivisor : 0;
-//                    xrest = (whdivisor && hscroll) ? dx % whdivisor : 0;
                     // check for stopping or changing direction
                     if ((dy < 0) != (dy_history.newest() < 0) || dy == 0) {
                         // stopped or changed direction, clear history
@@ -788,8 +769,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     dy_history.filter(dy);
                     time_history.filter(now_ns);
                     if (0 != dy || 0 != dx) {
-//                        int dv = wvdivisor ? dy / wvdivisor : 0;
-//                        int dh = (whdivisor && hscroll) ? dx / whdivisor : 0;
                         if (!hscroll) {
                             dx = 0;
                         }
@@ -925,7 +904,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             ////if (w>wlimit || w<3)
             if (fingers == 2) {
                 wasdouble = true;
-            } else if (_buttonCount >= 3 && fingers == 3) {
+            } else if (fingers == 3) {
                 wastriple = true;
             }
         }
@@ -1116,19 +1095,6 @@ int ApplePS2ALPSGlidePoint::processBitmap(unsigned int xMap, unsigned int yMap, 
     DEBUG_LOG("Process bitmap, fingers=%d\n", fingers);
 
     return fingers;
-}
-
-void ApplePS2ALPSGlidePoint::reportSemiMTData(int fingers, int x1, int y1, int x2, int y2) {
-    DEBUG_LOG("TODO: process multi-touch data\n");
-    //alps_set_slot(0, num_fingers != 0, x1, y1);
-    //alps_set_slot(1, num_fingers == 2, x2, y2);
-    // inside alps_set_slot:
-    //input_mt_slot(dev, slot);
-    //input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
-    //if (active) {
-    //    input_report_abs(dev, ABS_MT_POSITION_X, x);
-    //    input_report_abs(dev, ABS_MT_POSITION_Y, y);
-    //}
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
