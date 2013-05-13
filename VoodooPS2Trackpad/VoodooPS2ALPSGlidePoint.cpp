@@ -1163,10 +1163,6 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
     }
 }
 
-void ApplePS2ALPSGlidePoint::initTouchPad() {
-    deviceSpecificInit();
-}
-
 void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {
     // (read command byte)
     TPS2Request<7> request;

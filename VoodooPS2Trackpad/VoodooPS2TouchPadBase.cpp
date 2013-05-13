@@ -578,6 +578,9 @@ void VoodooPS2TouchPadBase::initTouchPad()
     
     // clear state of control key cache
     _modifierdown = 0;
+    
+    // initialize the touchpad
+    deviceSpecificInit();
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

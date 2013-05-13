@@ -135,8 +135,6 @@ protected:
     void packetReady();
 
     void setTouchPadEnable(bool enable);
-
-    void initTouchPad();
     
     void dispatchEventsWithInfo(int xraw, int yraw, int z, int fingers, UInt32 buttonsraw);
 
