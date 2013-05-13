@@ -65,7 +65,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     DEBUG_LOG("E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }\n",
     E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
 
-    success = IsItALPS(&E6, &E7);
+    success = isItALPS(&E6, &E7);
     DEBUG_LOG("ALPS Device? %s\n", (success ? "yes" : "no"));
 
     if (success) {
@@ -83,7 +83,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     return (success) ? this : 0;
 }
 
-bool ApplePS2ALPSGlidePoint::IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
+bool ApplePS2ALPSGlidePoint::isItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7) {
     bool success = false;
     int version;
     static const unsigned char rates[] = {0, 10, 20, 40, 60, 80, 100, 200};

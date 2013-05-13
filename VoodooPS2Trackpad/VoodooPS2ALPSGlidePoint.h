@@ -129,7 +129,7 @@ protected:
 
     void reportSemiMTData(int fingers, int x1, int y1, int x2, int y2);
 
-    bool IsItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7);
+    bool isItALPS(ALPSStatus_t *E6, ALPSStatus_t *E7);
 
     PS2InterruptResult interruptOccurred(UInt8 data);
 
