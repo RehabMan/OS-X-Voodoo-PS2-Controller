@@ -20,8 +20,11 @@ int main (int argc, char * const argv[]) {
 	io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!io_service)
 	{
-		printf ("No ApplePS2SynapticsTouchPad found\n");
-		return 1;
+        io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2ALPSGlidePoint"));
+        if (!io_service) {
+            printf ("No supported touchpad found\n");
+            return 1;
+        }
 	}
 	
     ////tmp2=[NSHomeDirectory() stringByAppendingString:
