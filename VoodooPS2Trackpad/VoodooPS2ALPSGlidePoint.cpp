@@ -677,16 +677,19 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     break;
 
                 default:
-                    if (wastriple && rtap) {
-                        buttons |= !swapdoubletriple ? 0x4 : 0x02;
-                        touchmode = MODE_NOTOUCH;
-                    } else if (wasdouble && rtap) {
-                        buttons |= !swapdoubletriple ? 0x2 : 0x04;
-                        touchmode = MODE_NOTOUCH;
-                    } else {
-                        DEBUG_LOG("Detected tap click\n");
-                        buttons |= 0x1;
-                        touchmode = dragging ? MODE_PREDRAG : MODE_NOTOUCH;
+                    // Don't allow tap click when in the scroll area
+                    if (!scroll || x < redge) {
+                        if (wastriple && rtap) {
+                            buttons |= !swapdoubletriple ? 0x4 : 0x02;
+                            touchmode = MODE_NOTOUCH;
+                        } else if (wasdouble && rtap) {
+                            buttons |= !swapdoubletriple ? 0x2 : 0x04;
+                            touchmode = MODE_NOTOUCH;
+                        } else {
+                            DEBUG_LOG("Detected tap click\n");
+                            buttons |= 0x1;
+                            touchmode = dragging ? MODE_PREDRAG : MODE_NOTOUCH;
+                        }
                     }
                     break;
             }
