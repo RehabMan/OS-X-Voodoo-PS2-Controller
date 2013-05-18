@@ -246,7 +246,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 #endif
 }
 
-void ApplePS2SynapticsTouchPad::deviceSpecificInit()
+bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
 {
     //
     // Query the touchpad for the capabilities we need to know.
@@ -260,6 +260,8 @@ void ApplePS2SynapticsTouchPad::deviceSpecificInit()
     // Enable the touchpad itself.
     //
     setTouchpadModeByte();
+    
+    return true;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

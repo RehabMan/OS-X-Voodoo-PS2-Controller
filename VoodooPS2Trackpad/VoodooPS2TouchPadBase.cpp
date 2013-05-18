@@ -278,10 +278,12 @@ bool VoodooPS2TouchPadBase::start( IOService * provider )
     //
     // Perform any implementation specific device initialization
     //
-
-    // TODO: allow return value to signify success or not
-    // If it fails then perform cleanup here
-    deviceSpecificInit();
+    if (!deviceSpecificInit()) {
+        _device->unlock();
+        _device->release();
+        // TODO: any other cleanup?
+        return false;
+    }
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.

@@ -69,7 +69,7 @@ protected:
     
     void setParamPropertiesGated(OSDictionary* dict);
     
-    virtual void deviceSpecificInit();
+    virtual bool deviceSpecificInit();
     
     virtual void initTouchPad();
 
