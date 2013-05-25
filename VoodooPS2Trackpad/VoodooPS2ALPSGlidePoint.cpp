@@ -302,9 +302,12 @@ void ApplePS2ALPSGlidePoint::packetReady() {
 }
 
 void ApplePS2ALPSGlidePoint::processPacketV1V2(UInt8 *packet) {
-    int x, y, z, ges, fin, left, right, middle;
+    int x, y, z, ges, fin, left, right, middle, buttons = 0;
 	int back = 0, forward = 0;
-    
+    uint64_t now_abs;
+
+    clock_get_uptime(&now_abs);
+
     if (modelData.proto_version == ALPS_PROTO_V1) {
         left = packet[2] & 0x10;
 		right = packet[2] & 0x08;
@@ -333,55 +336,54 @@ void ApplePS2ALPSGlidePoint::processPacketV1V2(UInt8 *packet) {
 			forward = back = 0;
         }
     }
-    
+
+    buttons |= left ? 0x01 : 0;
+    buttons |= right ? 0x02 : 0;
+    buttons |= middle ? 0x04 : 0;
+
     ges = packet[2] & 1;
 	fin = packet[2] & 2;
-    
+
     if ((modelData.flags & ALPS_DUALPOINT) && z == 127) {
-        // TODO: is this for trackstick processing?
-//		input_report_rel(dev2, REL_X,  (x > 383 ? (x - 768) : x));
-//		input_report_rel(dev2, REL_Y, -(y > 255 ? (y - 512) : y));
-//        
-//		alps_report_buttons(psmouse, dev2, dev, left, right, middle);
+        // I think this means it is a trackstick packet....
+        // if so we don't need all the extra logic...only movement
+        dispatchRelativePointerEventX((x > 383 ? (x - 768) : x),
+                                      -(y > 255 ? (y - 512) : y),
+                                      buttons,
+                                      now_abs);
 		return;
 	}
-    
+
     /*
 	 * A "tap and drag" operation is reported by the hardware as a transition
 	 * from (!fin && ges) to (fin && ges). This should be translated to the
 	 * sequence Z>0, Z==0, Z>0, so the Z==0 event has to be generated manually.
 	 */
 	if (ges && fin && !modelData.prev_fin) {
-        // TODO: generate the above sequence...looks like generate touch and untouch
-//		input_report_abs(dev, ABS_X, x);
-//		input_report_abs(dev, ABS_Y, y);
-//		input_report_abs(dev, ABS_PRESSURE, 0);
-//		input_report_key(dev, BTN_TOOL_FINGER, 0);
+        // TODO: Not quite sure if this is correct but sounds like it should be
+        // generating a drag...so mark the touchmode now as dragging??
+        touchmode = MODE_DRAG;
 	}
 	modelData.prev_fin = fin;
 
-    // TODO: process v1/v2 info
-//    if (z > 30)
-//		input_report_key(dev, BTN_TOUCH, 1);
-//	if (z < 25)
-//		input_report_key(dev, BTN_TOUCH, 0);
-//    
-//	if (z > 0) {
-//		input_report_abs(dev, ABS_X, x);
-//		input_report_abs(dev, ABS_Y, y);
-//	}
-//    
-//	input_report_abs(dev, ABS_PRESSURE, z);
-//	input_report_key(dev, BTN_TOOL_FINGER, z > 0);
-//    
-//	if (priv->flags & ALPS_WHEEL)
-//		input_report_rel(dev, REL_WHEEL, ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07));
-//    
+    // TODO: would be nice to have someone verify this behavior, not sure if
+    // this is a correct translation for this hardware...much different than
+    // the other ones
+    dispatchEventsWithInfo(x, y, z, 0, buttons);
+    
+	if (modelData.flags & ALPS_WHEEL) {
+        // TODO: get verification that this works correctly
+        //input_report_rel(dev, REL_WHEEL, ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07));
+        dispatchScrollWheelEventX(((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07), 0, 0, now_abs);
+    }
+
+    // TODO: send back and forward events
 //	if (priv->flags & (ALPS_FW_BK_1 | ALPS_FW_BK_2)) {
 //		input_report_key(dev, BTN_FORWARD, forward);
 //		input_report_key(dev, BTN_BACK, back);
 //	}
-//    
+
+    // TODO: not sure what this is...
 //	if (priv->flags & ALPS_FOUR_BUTTONS) {
 //		input_report_key(dev, BTN_0, packet[2] & 4);
 //		input_report_key(dev, BTN_1, packet[0] & 0x10);
