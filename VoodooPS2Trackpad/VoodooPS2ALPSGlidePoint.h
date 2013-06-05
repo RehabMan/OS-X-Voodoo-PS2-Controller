@@ -224,7 +224,7 @@ protected:
     virtual void dispatchRelativePointerEventWithPacket(UInt8 *packet,
             UInt32 packetSize);
 
-    void getStatus(ALPSStatus_t *status);
+    bool getStatus(ALPSStatus_t *status);
 
     virtual bool deviceSpecificInit();
 
@@ -311,6 +311,8 @@ protected:
     IOReturn identify();
     
     void setupMaxes();
+    
+    bool v1v2MagicEnable();
 
 public:
     virtual ApplePS2ALPSGlidePoint * probe(IOService *provider,

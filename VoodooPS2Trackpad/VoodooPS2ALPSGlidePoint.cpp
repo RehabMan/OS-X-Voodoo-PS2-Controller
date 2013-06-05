@@ -167,18 +167,22 @@ bool ApplePS2ALPSGlidePoint::deviceSpecificInit() {
     if (identify() != 0) {
         goto init_fail;
     }
-    
+
     // Setup expected packet size
     modelData.pktsize = modelData.proto_version == ALPS_PROTO_V4 ? 8 : 6;
-    
+
+    IOLog("Initializing TouchPad hardware...this may take a second.\n");
+
     if (!(this->*hw_init)()) {
         goto init_fail;
     }
-    
+
+    IOLog("Touchpad initialization complete.\n");
+
     return true;
-    
+
 init_fail:
-    IOLog("%s: Device initialization failed. Touchpad probably won't work", getName());
+    IOLog("%s: Device initialization failed. Touchpad probably won't work\n", getName());
     resetMouse();
     return false;
 }
@@ -191,7 +195,6 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     // Set defaults for this mouse model
     zlimit = 255;
     ledge = 0;
-    // Right edge, must allow for vertical scrolling
     setupMaxes();
     tedge = 0;
     vscrolldivisor = 1;
@@ -208,6 +211,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
 void ApplePS2ALPSGlidePoint::setupMaxes() {
     centerx = modelData.x_max / 2;
     centery = modelData.y_max / 2;
+    // Right edge, must allow for vertical scrolling
     redge = modelData.x_max - 250;
     bedge = modelData.y_max;
 }
@@ -294,6 +298,7 @@ void ApplePS2ALPSGlidePoint::packetReady() {
             (this->*process_packet)(packet);
             _ringBuffer.advanceTail(modelData.pktsize);
         } else {
+            DEBUG_LOG("Intercepted bare PS/2 packet..ignoring\n");
             // Ignore bare PS/2 packet for now...messes with the actual full 6-byte ALPS packet above
 //            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
             _ringBuffer.advanceTail(kPacketLengthSmall);
@@ -302,7 +307,7 @@ void ApplePS2ALPSGlidePoint::packetReady() {
 }
 
 void ApplePS2ALPSGlidePoint::processPacketV1V2(UInt8 *packet) {
-    int x, y, z, ges, fin, left, right, middle, buttons = 0;
+    int x, y, z, ges, fin, left, right, middle, buttons = 0, fingers = 0;
 	int back = 0, forward = 0;
     uint64_t now_abs;
 
@@ -345,14 +350,20 @@ void ApplePS2ALPSGlidePoint::processPacketV1V2(UInt8 *packet) {
 	fin = packet[2] & 2;
 
     if ((modelData.flags & ALPS_DUALPOINT) && z == 127) {
+        int dx, dy;
+        dx = x > 383 ? (x - 768) : x;
+        dy = -(y > 255 ? (y - 512) : y);
         // I think this means it is a trackstick packet....
         // if so we don't need all the extra logic...only movement
-        dispatchRelativePointerEventX((x > 383 ? (x - 768) : x),
-                                      -(y > 255 ? (y - 512) : y),
-                                      buttons,
-                                      now_abs);
+        DEBUG_LOG("dispatch trackstick movement dx=%d, dy=%d\n", dx, dy);
+        dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
 		return;
 	}
+    
+    /* Convert hardware tap to a reasonable Z value */
+    if (ges && !fin) {
+        z = z_finger + 1;
+    }
 
     /*
 	 * A "tap and drag" operation is reported by the hardware as a transition
@@ -362,19 +373,39 @@ void ApplePS2ALPSGlidePoint::processPacketV1V2(UInt8 *packet) {
 	if (ges && fin && !modelData.prev_fin) {
         // TODO: Not quite sure if this is correct but sounds like it should be
         // generating a drag...so mark the touchmode now as dragging??
+        DEBUG_LOG("switch to drag mode\n");
         touchmode = MODE_DRAG;
 	}
 	modelData.prev_fin = fin;
+    
+    if (z > 0) {
+        fingers++;
+
+        /*
+         * Arbitrary value. The z value increases as more fingers are
+         * on the trackpad, taken from the Slice version where he integrated
+         * 2-finger scrolling in this way, also analyzed some z values from
+         * someone else testing this out
+         */
+        if (z >= 98) {
+            fingers++;
+        }
+    }
+    
 
     // TODO: would be nice to have someone verify this behavior, not sure if
     // this is a correct translation for this hardware...much different than
     // the other ones
-    dispatchEventsWithInfo(x, y, z, 0, buttons);
+    dispatchEventsWithInfo(x, y, z, fingers, buttons);
     
 	if (modelData.flags & ALPS_WHEEL) {
         // TODO: get verification that this works correctly
         //input_report_rel(dev, REL_WHEEL, ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07));
-        dispatchScrollWheelEventX(((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07), 0, 0, now_abs);
+        int scrollAmount = ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07);
+        if (scrollAmount) {
+            DEBUG_LOG("dispatch scroll wheel event, scroll=%d\n", scrollAmount);
+            dispatchScrollWheelEventX(scrollAmount, 0, 0, now_abs);
+        }
     }
 
     // TODO: send back and forward events
@@ -1414,8 +1445,8 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
     }
 }
 
-void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {
-    repeatCmd(NULL, NULL, kDP_SetDefaultsAndDisable, status);
+bool ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {
+    return repeatCmd(NULL, NULL, kDP_SetDefaultsAndDisable, status);
 }
 
 /*
@@ -1452,9 +1483,13 @@ bool ApplePS2ALPSGlidePoint::tapMode(bool enable) {
     request.commandsCount = 8;
     _device->submitRequestAndBlock(&request);
     
-    getStatus(&result);
+    if (request.commandsCount != 8) {
+        DEBUG_LOG("Enabling tap mode failed before getStatus call, command count=%d\n",
+                  request.commandsCount);
+        return false;
+    }
     
-    return true;
+    return getStatus(&result);
 }
 
 bool ApplePS2ALPSGlidePoint::enterCommandMode() {
@@ -1488,8 +1523,6 @@ bool ApplePS2ALPSGlidePoint::exitCommandMode() {
 }
 
 bool ApplePS2ALPSGlidePoint::hwInitV3() {
-    IOLog("Initializing TouchPad hardware...this may take a second.\n");
-
     int regVal;
 
     regVal = probeTrackstickV3(ALPS_REG_BASE_PINNACLE);
@@ -1562,7 +1595,6 @@ bool ApplePS2ALPSGlidePoint::hwInitV3() {
         return false;
     }
 
-    IOLog("TouchPad initialization complete\n");
     return true;
 
 error:
@@ -1571,7 +1603,7 @@ error:
 }
 
 bool ApplePS2ALPSGlidePoint::hwInitRushmoreV3() {
-    IOLog("Initializing TouchPad hardware...this may take a second.\n");
+    
     
     int regVal;
     TPS2Request<1> request;
@@ -1622,7 +1654,6 @@ bool ApplePS2ALPSGlidePoint::hwInitRushmoreV3() {
     request.commandsCount = 1;
     _device->submitRequestAndBlock(&request);
 
-    IOLog("TouchPad initialization complete\n");
     return request.commandsCount == 1;
 
 error:
@@ -1828,7 +1859,7 @@ bool ApplePS2ALPSGlidePoint::passthroughModeV2(bool enable) {
     /* we may get 3 more bytes, just ignore them */
 	//ps2_drain(ps2dev, 3, 100);
     
-    return true;
+    return request.commandsCount == 4;
 };
 
 bool ApplePS2ALPSGlidePoint::absoluteModeV3() {
@@ -1855,9 +1886,21 @@ IOReturn ApplePS2ALPSGlidePoint::probeTrackstickV3(int regBase) {
     if (!enterCommandMode()) {
         goto error;
     }
-    
+
     regVal = commandModeReadReg(regBase + 0x08);
-    
+
+    if (regVal == -1) {
+        // On linux this is reported as an IO error
+        // however, here it can also mean that the device
+        // doesn't exist. So I lean on the side that it
+        // doesn't exist. If there was an IO error here
+        // it doesn't matter too much anyway, the trackstick
+        // just won't work or there will be another IO error
+        // later on that will break out of the init as well
+        ret = kIOReturnNoDevice;
+        goto error;
+    }
+
     /* bit 7: trackstick is present */
     ret = regVal & 0x80 ? 0 : kIOReturnNoDevice;
     
@@ -1922,9 +1965,11 @@ error:
     return ret;
 }
 
-bool ApplePS2ALPSGlidePoint::absoluteModeV1V2() {
-    
-    TPS2Request<6> request;
+/*
+ * Used during both passthrough mode initialization and touchpad enablement
+ */
+bool ApplePS2ALPSGlidePoint::v1v2MagicEnable() {
+    TPS2Request<5> request;
     
     /* Try ALPS magic knock - 4 disable before enable */
     request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -1937,17 +1982,34 @@ bool ApplePS2ALPSGlidePoint::absoluteModeV1V2() {
     request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
     request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[4].inOrOut = kDP_Enable;
+    request.commandsCount = 5;
+    
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    
+    return request.commandsCount == 5;
+}
+
+bool ApplePS2ALPSGlidePoint::absoluteModeV1V2() {
+    
+    TPS2Request<1> request;
+    
+    if (!v1v2MagicEnable()) {
+        IOLog("Failed to enter absolute mode with magic knock\n");
+        return false;
+    }
+    
     /*
 	 * Switch mouse to poll (remote) mode so motion data will not
 	 * get in our way
 	 */
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = kDP_MouseSetPoll;
-    request.commandsCount = 6;
+    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut = kDP_MouseSetPoll;
+    request.commandsCount = 1;
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
 
-    return request.commandsCount == 6;
+    return request.commandsCount == 1;
 }
 
 bool ApplePS2ALPSGlidePoint::repeatCmd(SInt32 init_command, SInt32 init_arg, SInt32 repeated_command, ALPSStatus_t *report) {
@@ -2009,7 +2071,7 @@ bool ApplePS2ALPSGlidePoint::hwInitV1V2() {
     }
     
     if (!tapMode(true)) {
-        IOLog("WARN: Failed to enable hardware tapping\n");
+        IOLog("ERROR: Failed to enable hardware tapping\n");
         return false;
     }
     
@@ -2025,11 +2087,22 @@ bool ApplePS2ALPSGlidePoint::hwInitV1V2() {
         }
     }
     
+    // Enable data reporting
+    v1v2MagicEnable();
+    
+    // Not sure if this is needed or not...previous version did not have
+    // it but the linux driver does, need to figure out why its not reporting
+    // data right now
     /* ALPS needs stream mode, otherwise it won't report any data */
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    /* request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[0].inOrOut = kDP_SetMouseStreamMode;
     request.commandsCount = 1;
     _device->submitRequestAndBlock(&request);
+    
+    if (request.commandsCount != 1) {
+        IOLog("ERROR: Failed to set stream mode on touchpad\n");
+        return false;
+    }*/
     
     return true;
 }
@@ -2051,9 +2124,7 @@ bool ApplePS2ALPSGlidePoint::absoluteModeV4() {
     return true;
 }
 
-bool ApplePS2ALPSGlidePoint::hwInitV4() {
-    IOLog("Initializing TouchPad hardware...this may take a second.\n");
-    
+bool ApplePS2ALPSGlidePoint::hwInitV4() {    
     TPS2Request<7> request;
     
     if (!enterCommandMode()) {
@@ -2132,8 +2203,7 @@ bool ApplePS2ALPSGlidePoint::hwInitV4() {
     if (!setSampleRateAndResolution(0x64, 0x02)) {
         return false;
     }
-    
-    IOLog("TouchPad initialization complete\n");
+
     return true;
     
 error:
@@ -2181,6 +2251,11 @@ void ApplePS2ALPSGlidePoint::setDefaults() {
         case ALPS_PROTO_V2:
             hw_init = &ApplePS2ALPSGlidePoint::hwInitV1V2;
             process_packet = &ApplePS2ALPSGlidePoint::processPacketV1V2;
+            // On linux it appears to use x/y maxes as defined above
+            // however in some preliminary testing with this driver it
+            // appears the maxes are actually closer to these values:
+            modelData.x_max = 1100;
+            modelData.y_max = 800;
 //            set_abs_params = alps_set_abs_params_st;
             break;
         case ALPS_PROTO_V3:
@@ -2293,7 +2368,7 @@ IOReturn ApplePS2ALPSGlidePoint::identify() {
 		modelData.x_bits = 16;
 		modelData.y_bits = 12;
         
-		if (!probeTrackstickV3(ALPS_REG_BASE_RUSHMORE)) {
+		if (probeTrackstickV3(ALPS_REG_BASE_RUSHMORE)) {
 			modelData.flags &= ~ALPS_DUALPOINT;
         }
         
