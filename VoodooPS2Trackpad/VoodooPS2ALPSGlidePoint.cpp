@@ -1890,14 +1890,7 @@ IOReturn ApplePS2ALPSGlidePoint::probeTrackstickV3(int regBase) {
     regVal = commandModeReadReg(regBase + 0x08);
 
     if (regVal == -1) {
-        // On linux this is reported as an IO error
-        // however, here it can also mean that the device
-        // doesn't exist. So I lean on the side that it
-        // doesn't exist. If there was an IO error here
-        // it doesn't matter too much anyway, the trackstick
-        // just won't work or there will be another IO error
-        // later on that will break out of the init as well
-        ret = kIOReturnNoDevice;
+        IOLog("%s:: Error reading whether a trackstick is present or not", getName());
         goto error;
     }
 
