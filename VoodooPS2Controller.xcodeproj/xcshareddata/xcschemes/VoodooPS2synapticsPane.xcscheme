@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84F424E1161B59E500777765"
-               BuildableName = "VoodooPS2synapticsPane.prefPane"
+               BuildableName = "VoodooPS2synapticsPane"
                BlueprintName = "VoodooPS2synapticsPane"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>

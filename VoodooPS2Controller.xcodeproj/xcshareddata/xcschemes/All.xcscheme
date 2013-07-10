@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84167812161B55B2002C60E6"
-               BuildableName = "VoodooPS2Controller.kext"
+               BuildableName = "VoodooPS2Controller"
                BlueprintName = "VoodooPS2Controller"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>
@@ -29,7 +29,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8416782C161B5613002C60E6"
-               BuildableName = "VoodooPS2Keyboard.kext"
+               BuildableName = "VoodooPS2Keyboard"
                BlueprintName = "VoodooPS2Keyboard"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>
@@ -43,7 +43,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84167840161B56A2002C60E6"
-               BuildableName = "VoodooPS2Mouse.kext"
+               BuildableName = "VoodooPS2Mouse"
                BlueprintName = "VoodooPS2Mouse"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>
@@ -57,7 +57,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84167854161B56C4002C60E6"
-               BuildableName = "VoodooPS2Trackpad.kext"
+               BuildableName = "VoodooPS2Trackpad"
                BlueprintName = "VoodooPS2Trackpad"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>
@@ -71,7 +71,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "84F424E1161B59E500777765"
-               BuildableName = "VoodooPS2synapticsPane.prefPane"
+               BuildableName = "VoodooPS2synapticsPane"
                BlueprintName = "VoodooPS2synapticsPane"
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>

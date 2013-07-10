@@ -190,8 +190,11 @@ int main(int argc, const char *argv[])
         g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2Mouse"));
         if (!g_ioservice)
         {
-            DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
-            return -1;
+            g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2ALPSGlidePoint"));
+            if (!g_ioservice) {
+                DEBUG_LOG("No supported touchpad found\n");
+                return -1;
+            }
         }
 	}
     

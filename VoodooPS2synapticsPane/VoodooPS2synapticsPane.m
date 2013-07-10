@@ -115,10 +115,13 @@ int getBoolean (const char * key, io_service_t io_service)
 	io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!io_service)
 	{
-		NSRunCriticalAlertPanel( 
-								NSLocalizedString( @"ApplePS2SynapticsTouchPad not found", "MsgBox"), 
-								NSLocalizedString( @"Error", "MsgBoxTitle" ), nil, nil, nil );
- 		return;
+        io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2ALPSGlidePoint"));
+        if (!io_service) {
+            NSRunCriticalAlertPanel(
+                                    NSLocalizedString( @"Supported touchpad not found", "MsgBox"),
+                                    NSLocalizedString( @"Error", "MsgBoxTitle" ), nil, nil, nil );
+            return;
+        }
 	}	
 	dict=CFDictionaryCreateMutable(NULL,0, &kCFTypeDictionaryKeyCallBacks ,NULL);	
 	[speedSliderX setDoubleValue:101-getNumber("DivisorX", io_service)];
