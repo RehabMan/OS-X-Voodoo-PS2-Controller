@@ -41,42 +41,49 @@ enum {
 #define ALPS_REG_BASE_RUSHMORE	0xc2c0
 #define ALPS_REG_BASE_PINNACLE	0x0000
 
+/*
+ * All these commands are 1 byte. The Linux driver uses 2 bytes for
+ * each command where nibble 3 (0x0f00) is used to determine the
+ * amount of data to receive and nibble 4 (0xf000) is used to
+ * determine the amount of data to send after the initial command.
+ * 
+ */
 static const struct alps_nibble_commands alps_v3_nibble_commands[] = {
-	{ kDP_MouseSetPoll,		        0x00 }, /* 0 */
-	{ kDP_SetDefaults,	            0x00 }, /* 1 */
-	{ kDP_SetMouseScaling2To1,	    0x00 }, /* 2 */
-	{ kDP_SetMouseSampleRate,		0x0a }, /* 3 */
-	{ kDP_SetMouseSampleRate,		0x14 }, /* 4 */
-	{ kDP_SetMouseSampleRate,		0x28 }, /* 5 */
-	{ kDP_SetMouseSampleRate,		0x3c }, /* 6 */
-	{ kDP_SetMouseSampleRate,		0x50 }, /* 7 */
-	{ kDP_SetMouseSampleRate,		0x64 }, /* 8 */
-	{ kDP_SetMouseSampleRate,		0xc8 }, /* 9 */
-	{ kDP_CommandNibble10,		    0x00 }, /* a */
-	{ kDP_SetMouseResolution,		0x00 }, /* b */
-	{ kDP_SetMouseResolution,		0x01 }, /* c */
-	{ kDP_SetMouseResolution,		0x02 }, /* d */
-	{ kDP_SetMouseResolution,		0x03 }, /* e */
-	{ kDP_SetMouseScaling1To1,	    0x00 }, /* f */
+	{ kDP_MouseSetPoll,                 0x00 }, /* 0 no send/recv */
+	{ kDP_SetDefaults,                  0x00 }, /* 1 no send/recv */
+	{ kDP_SetMouseScaling2To1,          0x00 }, /* 2 no send/recv */
+	{ kDP_SetMouseSampleRate | 0x1000,  0x0a }, /* 3 send=1 recv=0 */
+	{ kDP_SetMouseSampleRate | 0x1000,	0x14 }, /* 4 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x28 }, /* 5 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x3c }, /* 6 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x50 }, /* 7 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x64 }, /* 8 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0xc8 }, /* 9 ..*/
+	{ kDP_CommandNibble10    | 0x0100,	0x00 }, /* a send=0 recv=1 */
+	{ kDP_SetMouseResolution | 0x1000,	0x00 }, /* b send=1 recv=0 */
+	{ kDP_SetMouseResolution | 0x1000,	0x01 }, /* c ..*/
+	{ kDP_SetMouseResolution | 0x1000,	0x02 }, /* d ..*/
+	{ kDP_SetMouseResolution | 0x1000,	0x03 }, /* e ..*/
+	{ kDP_SetMouseScaling1To1,          0x00 }, /* f no send/recv */
 };
 
 static const struct alps_nibble_commands alps_v4_nibble_commands[] = {
-	{ kDP_Enable,		            0x00 }, /* 0 */
-	{ kDP_SetDefaults,	            0x00 }, /* 1 */
-	{ kDP_SetMouseScaling2To1,	    0x00 }, /* 2 */
-	{ kDP_SetMouseSampleRate,		0x0a }, /* 3 */
-	{ kDP_SetMouseSampleRate,		0x14 }, /* 4 */
-	{ kDP_SetMouseSampleRate,		0x28 }, /* 5 */
-	{ kDP_SetMouseSampleRate,		0x3c }, /* 6 */
-	{ kDP_SetMouseSampleRate,		0x50 }, /* 7 */
-	{ kDP_SetMouseSampleRate,		0x64 }, /* 8 */
-	{ kDP_SetMouseSampleRate,		0xc8 }, /* 9 */
-	{ kDP_CommandNibble10,		    0x00 }, /* a */
-	{ kDP_SetMouseResolution,		0x00 }, /* b */
-	{ kDP_SetMouseResolution,		0x01 }, /* c */
-	{ kDP_SetMouseResolution,		0x02 }, /* d */
-	{ kDP_SetMouseResolution,		0x03 }, /* e */
-	{ kDP_SetMouseScaling1To1,	    0x00 }, /* f */
+	{ kDP_Enable,                       0x00 }, /* 0 no send/recv */
+	{ kDP_SetDefaults,                  0x00 }, /* 1 no send/recv */
+	{ kDP_SetMouseScaling2To1,          0x00 }, /* 2 no send/recv */
+	{ kDP_SetMouseSampleRate | 0x1000,  0x0a }, /* 3 send=1 recv=0 */
+	{ kDP_SetMouseSampleRate | 0x1000,	0x14 }, /* 4 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x28 }, /* 5 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x3c }, /* 6 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x50 }, /* 7 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0x64 }, /* 8 ..*/
+	{ kDP_SetMouseSampleRate | 0x1000,	0xc8 }, /* 9 ..*/
+	{ kDP_CommandNibble10    | 0x0100,	0x00 }, /* a send=0 recv=1 */
+	{ kDP_SetMouseResolution | 0x1000,	0x00 }, /* b send=1 recv=0 */
+	{ kDP_SetMouseResolution | 0x1000,	0x01 }, /* c ..*/
+	{ kDP_SetMouseResolution | 0x1000,	0x02 }, /* d ..*/
+	{ kDP_SetMouseResolution | 0x1000,	0x03 }, /* e ..*/
+	{ kDP_SetMouseScaling1To1,          0x00 }, /* f no send/recv */
 };
 
 
@@ -231,7 +238,7 @@ bool ApplePS2ALPSGlidePoint::resetMouse() {
 
     // Reset mouse
     request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut32 = 0x02ff;
+    request.commands[0].inOrOut = kDP_Reset;
     request.commands[1].command = kPS2C_ReadDataPort;
     request.commands[1].inOrOut = 0;
     request.commands[2].command = kPS2C_ReadDataPort;
@@ -1527,6 +1534,7 @@ bool ApplePS2ALPSGlidePoint::hwInitV3() {
 
     regVal = probeTrackstickV3(ALPS_REG_BASE_PINNACLE);
     if (regVal == kIOReturnIOError) {
+        IOLog("IO error trying to probe for trackstick\n");
         goto error;
     }
     
@@ -1693,7 +1701,7 @@ int ApplePS2ALPSGlidePoint::commandModeReadReg(int addr) {
     ALPSStatus_t status;
 
     if (!commandModeSetAddr(addr)) {
-        DEBUG_LOG("Failed to set addr to read register\n");
+        IOLog("%s: Failed to set addr to read register\n", getName());
         return -1;
     }
 
@@ -1710,6 +1718,7 @@ int ApplePS2ALPSGlidePoint::commandModeReadReg(int addr) {
     _device->submitRequestAndBlock(&request);
     
     if (request.commandsCount != 4) {
+        IOLog("%s: ERROR: Failed to process get mouse info command when reading register. Commands executed=%d, expected=4\n", getName(), request.commandsCount);
         return -1;
     }
 
@@ -1724,7 +1733,7 @@ int ApplePS2ALPSGlidePoint::commandModeReadReg(int addr) {
      * address.
      */
     if (addr != ((status.bytes[0] << 8) | status.bytes[1])) {
-        DEBUG_LOG("ApplePS2ALPSGlidePoint ERROR: read wrong registry value, expected: %x\n", addr);
+        IOLog("ApplePS2ALPSGlidePoint ERROR: read wrong registry value, expected=%x, actual=%x\n", addr, ((status.bytes[0] << 8) | status.bytes[1]));
         return -1;
     }
 
@@ -1752,32 +1761,58 @@ bool ApplePS2ALPSGlidePoint::commandModeWriteReg(UInt8 value) {
 }
 
 bool ApplePS2ALPSGlidePoint::commandModeSendNibble(int nibble) {
-    UInt8 command;
+    SInt32 command;
+    // The largest amount of requests we will have is 2 right now
+    // 1 for the initial command, and 1 for sending data OR 1 for receiving data
+    // If the nibble commands at the top change then this will need to change as
+    // well. For now we will just validate that the request will not overload
+    // this object.
     TPS2Request<2> request;
-    int cmdCount = 0;
+    int cmdCount = 0, send = 0, receive = 0, i;
+
+    if (nibble > 0xf) {
+        IOLog("%s::commandModeSendNibble ERROR: nibble value is greater than 0xf, command may fail\n", getName());
+    }
 
     request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
     command = modelData.nibble_commands[nibble].command;
-    request.commands[cmdCount++].inOrOut = command;
+    request.commands[cmdCount++].inOrOut = command & 0xff;
 
-    if (command & 0x0f00) {
-        DEBUG_LOG("sendNibble: only sending command: 0x%02x\n", command);
-        // linux -> param = unsigned char[4] -- dummy read 3 times?..other AppleLife version does not read
-        // TODO: should we read the status here?
-    } else {
+    send = (command >> 12 & 0xf);
+    receive = (command >> 8 & 0xf);
+
+    // Validate that the number of requests will not exceed our buffer as
+    // defined above
+    // Also, send can never be > 1 since all we have available is the data
+    // from the alps_nibble_commands which is 1 byte
+    if ((send > 1) || ((send + receive + 1) > 2)) {
+        IOLog("%s::commandModeSendNibble: ERROR: Nibble commands have changed. Cannot process nibble that sends or receives more than 1 byte of data.\n", getName());
+        return false;
+    }
+
+    //DEBUG_LOG("%s: send nibble: nibble=%x command info=%x command=0x%02x send=%d, receive=%d, data=0x%02x\n",
+    //          getName(), nibble, command, request.commands[0].inOrOut, send, receive, modelData.nibble_commands[nibble].data);
+
+    if (send > 0) {
         request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
         request.commands[cmdCount++].inOrOut = modelData.nibble_commands[nibble].data;
-//        DEBUG_LOG("sending nibble with command=0x%02x, data=0x%02x\n", command, modelData.nibble_commands[nibble].data);
     }
+
+    // Receive the amount of data for the given command
+    // Even though we don't read the data, we should drain the data port to follow protocol
+    for (i = 0; i < receive; i++) {
+        request.commands[cmdCount].command = kPS2C_ReadDataPort;
+        request.commands[cmdCount++].inOrOut = 0;
+    }
+
     request.commandsCount = cmdCount;
     assert(request.commandsCount <= countof(request.commands));
 
     _device->submitRequestAndBlock(&request);
     
-//    DEBUG_LOG("num nibble commands=%d, expexted=%d\n", request.commandsCount, cmdCount);
+    //DEBUG_LOG("%s: num nibble commands=%d, expected=%d\n", getName(), request.commandsCount, cmdCount);
 
-    // TODO: find out why the second command doesn't work....is this OK?
-    return request.commandsCount >= 1;
+    return request.commandsCount == cmdCount;
 }
 
 bool ApplePS2ALPSGlidePoint::commandModeSetAddr(int addr) {
@@ -1785,7 +1820,7 @@ bool ApplePS2ALPSGlidePoint::commandModeSetAddr(int addr) {
     TPS2Request<1> request;
     int i, nibble;
 
-//    DEBUG_LOG("command mode set addr with addr command: 0x%02x\n", modelData.addr_command);
+    //DEBUG_LOG("command mode set addr with addr command: 0x%02x\n", modelData.addr_command);
     request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[0].inOrOut = modelData.addr_command;
     request.commandsCount = 1;
@@ -1890,7 +1925,7 @@ IOReturn ApplePS2ALPSGlidePoint::probeTrackstickV3(int regBase) {
     regVal = commandModeReadReg(regBase + 0x08);
 
     if (regVal == -1) {
-        IOLog("%s:: Error reading whether a trackstick is present or not", getName());
+        IOLog("%s:: Error reading whether a trackstick is present or not\n", getName());
         goto error;
     }
 
@@ -1899,6 +1934,7 @@ IOReturn ApplePS2ALPSGlidePoint::probeTrackstickV3(int regBase) {
     
 error:
     exitCommandMode();
+    DEBUG_LOG("probeTrackstick result: %d\n", ret);
     return ret;
 }
 
