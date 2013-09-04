@@ -126,6 +126,9 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     bogusdxthresh = 400;
     bogusdythresh = 350;
     
+    scrolldxthresh = 10;
+    scrolldythresh = 10;
+    
     immediateclick = true;
 
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
@@ -186,6 +189,9 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     momentumscrolldivisor = 100;
     momentumscrollsamplesmin = 3;
     momentumscrollcurrent = 0;
+    
+    dragexitdelay = 100000000;
+    dragTimer = 0;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -257,6 +263,16 @@ bool VoodooPS2TouchPadBase::start( IOService * provider )
             return false;
         }
         pWorkLoop->addEventSource(_buttonTimer);
+    }
+    
+    //
+    // Setup dragTimer event source
+    //
+    if (dragexitdelay)
+    {
+        dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onDragTimer));
+        if (dragTimer)
+            pWorkLoop->addEventSource(dragTimer);
     }
     
     pWorkLoop->addEventSource(_cmdGate);
@@ -558,6 +574,17 @@ UInt32 VoodooPS2TouchPadBase::middleButton(UInt32 buttons, uint64_t now_abs, MBC
     
     // return modified buttons
     return buttons;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void VoodooPS2TouchPadBase::onDragTimer(void)
+{
+    touchmode=MODE_NOTOUCH;
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
+    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -52,6 +52,196 @@ OSDefineMetaClassAndStructors(ApplePS2SynapticsTouchPad, VoodooPS2TouchPadBase);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+#if 0//MERGE
+<<<<<<< HEAD
+=======
+bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
+{
+    //
+    // Initialize this object's minimal state. This is invoked right after this
+    // object is instantiated.
+    //
+    
+    if (!super::init(dict))
+        return false;
+
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return false;
+        }
+#ifdef DEBUG
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+#endif
+    }
+    
+    // initialize state...
+    _device = NULL;
+    _interruptHandlerInstalled = false;
+    _powerControlHandlerInstalled = false;
+    _messageHandlerInstalled = false;
+    _packetByteCount = 0;
+    _lastdata = 0;
+    _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
+    _cmdGate = 0;
+
+    // set defaults for configuration items
+    
+	z_finger=45;
+	divisorx=divisory=1;
+	ledge=1700;
+	redge=5200;
+	tedge=4200;
+	bedge=1700;
+	vscrolldivisor=30;
+	hscrolldivisor=30;
+	cscrolldivisor=0;
+	ctrigger=0;
+	centerx=3000;
+	centery=3000;
+	maxtaptime=130000000;
+	maxdragtime=230000000;
+	hsticky=0;
+	vsticky=0;
+	wsticky=0;
+	tapstable=1;
+	wlimit=9;
+	wvdivisor=30;
+	whdivisor=30;
+	clicking=true;
+	dragging=true;
+	draglock=false;
+    draglocktemp=0;
+	hscroll=false;
+	scroll=true;
+    outzone_wt = palm = palm_wt = false;
+    zlimit = 100;
+    noled = false;
+    maxaftertyping = 500000000;
+    mousemultiplierx = 20;
+    mousemultipliery = 20;
+    mousescrollmultiplierx = 20;
+    mousescrollmultipliery = 20;
+    mousemiddlescroll = true;
+    wakedelay = 1000;
+    skippassthru = false;
+    tapthreshx = tapthreshy = 50;
+    dblthreshx = dblthreshy = 100;
+    zonel = 1700;  zoner = 5200;
+    zonet = 99999; zoneb = 0;
+    diszl = 0; diszr = 1700;
+    diszt = 99999; diszb = 4200;
+    diszctrl = 0;
+    _resolution = 2300;
+    _scrollresolution = 2300;
+    swipedx = swipedy = 800;
+    rczl = 3800; rczt = 2000;
+    rczr = 99999; rczb = 0;
+    _buttonCount = 2;
+    swapdoubletriple = false;
+    draglocktempmask = 0x0100010; // default is Command key
+    clickpadclicktime = 300000000; // 300ms default
+    clickpadtrackboth = true;
+    
+    bogusdxthresh = 400;
+    bogusdythresh = 350;
+    
+    scrolldxthresh = 10;
+    scrolldythresh = 10;
+    
+    immediateclick = true;
+
+    xupmm = yupmm = 50; // 50 is just arbitrary, but same
+    
+    _extendedwmode=false;
+    
+    // intialize state
+    
+	lastx=0;
+	lasty=0;
+    lastf=0;
+	xrest=0;
+	yrest=0;
+    lastbuttons=0;
+    
+    // intialize state for secondary packets/extendedwmode
+    xrest2=0;
+    yrest2=0;
+    clickedprimary=false;
+    lastx2=0;
+    lasty2=0;
+    tracksecondary=false;
+    
+    // state for middle button
+    _buttonTimer = 0;
+    _mbuttonstate = STATE_NOBUTTONS;
+    _pendingbuttons = 0;
+    _buttontime = 0;
+    _maxmiddleclicktime = 100000000;
+    _fakemiddlebutton = true;
+    
+    ignoredeltas=0;
+    ignoredeltasstart=0;
+	scrollrest=0;
+    touchtime=untouchtime=0;
+	wastriple=wasdouble=false;
+    keytime = 0;
+    ignoreall = false;
+    passbuttons = 0;
+    passthru = false;
+    ledpresent = false;
+    clickpadtype = 0;
+    _clickbuttons = 0;
+    _reportsv = false;
+    mousecount = 0;
+    usb_mouse_stops_trackpad = true;
+    _modifierdown = 0;
+    scrollzoommask = 0;
+    
+    inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
+    xmoved=ymoved=0;
+    
+    momentumscroll = true;
+    scrollTimer = 0;
+    momentumscrolltimer = 10000000;
+    momentumscrollthreshy = 7;
+    momentumscrollmultiplier = 98;
+    momentumscrolldivisor = 100;
+    momentumscrollsamplesmin = 3;
+    momentumscrollcurrent = 0;
+    
+    dragexitdelay = 100000000;
+    dragTimer = 0;
+    
+	touchmode=MODE_NOTOUCH;
+    
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.8 loaded...\n");
+    
+	setProperty ("Revision", 24, 32);
+    
+    //
+    // Load settings specific to Platform Profile
+    //
+    
+    setParamPropertiesGated(config);
+    OSSafeRelease(config);
+    
+    return true;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+>>>>>>> master
+#endif //#if 0//MERGE
+
 ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
     DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
@@ -249,6 +439,95 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
 {
     //
+#if 0//MERGE
+<<<<<<< HEAD
+=======
+    // The driver has been instructed to start. This is called after a
+    // successful probe and match.
+    //
+
+    if (!super::start(provider))
+        return false;
+
+    //
+    // Maintain a pointer to and retain the provider object.
+    //
+
+    _device = (ApplePS2MouseDevice *) provider;
+    _device->retain();
+    
+    //
+    // Announce hardware properties.
+    //
+
+    IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports type 0x%02x, version %d.%d\n",
+          _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+    
+    //
+    // Advertise the current state of the tapping feature.
+    //
+    // Must add this property to let our superclass know that it should handle
+    // trackpad acceleration settings from user space.  Without this, tracking
+    // speed adjustments from the mouse prefs panel have no effect.
+    //
+
+    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
+	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
+    
+    //
+    // Setup workloop with command gate for thread syncronization...
+    //
+    IOWorkLoop* pWorkLoop = getWorkLoop();
+    _cmdGate = IOCommandGate::commandGate(this);
+    if (!pWorkLoop || !_cmdGate)
+    {
+        _device->release();
+        return false;
+    }
+    
+    //
+    // Setup button timer event source
+    //
+    if (_buttonCount >= 3)
+    {
+        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onButtonTimer));
+        if (!_buttonTimer)
+        {
+            _device->release();
+            return false;
+        }
+        pWorkLoop->addEventSource(_buttonTimer);
+    }
+    
+    pWorkLoop->addEventSource(_cmdGate);
+    
+    //
+    // Setup scrolltimer event source
+    //
+    scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
+    if (scrollTimer)
+        pWorkLoop->addEventSource(scrollTimer);
+    
+    //
+    // Setup dragTimer event source
+    //
+    if (dragexitdelay)
+    {
+        dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onDragTimer));
+        if (dragTimer)
+            pWorkLoop->addEventSource(dragTimer);
+    }
+
+    //
+    // Lock the controller during initialization
+    //
+    
+    _device->lock();
+    
+    //
+>>>>>>> master
+#endif//#if 0//MERGE
     // Query the touchpad for the capabilities we need to know.
     //
     
@@ -496,6 +775,19 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
     // return modified buttons
     return buttons;
 }
+
+#if 0//MERGE
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2SynapticsTouchPad::onDragTimer(void)
+{
+    touchmode=MODE_NOTOUCH;
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
+    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+}
+#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -925,8 +1217,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
 		else
 		{
-			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && (draglock || draglocktemp))
-				touchmode=MODE_DRAGNOTOUCH;
+			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK)
+                && (draglock || draglocktemp || (dragTimer && dragexitdelay)))
+            {
+                touchmode=MODE_DRAGNOTOUCH;
+                if (!draglock && !draglocktemp)
+                {
+                    cancelTimer(dragTimer);
+                    setTimerTimeout(dragTimer, dragexitdelay);
+                }
+            }
 			else
             {
 				touchmode=MODE_NOTOUCH;
@@ -1032,9 +1332,21 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     // put movement and time in history for later
                     dy_history.filter(dy);
                     time_history.filter(now_ns);
+                    //REVIEW: filter out small movements (Mavericks issue)
+                    if (abs(dx) < scrolldxthresh)
+                    {
+                        xrest = dx;
+                        dx = 0;
+                    }
+                    if (abs(dy) < scrolldythresh)
+                    {
+                        yrest = dy;
+                        dy = 0;
+                    }
                     if (0 != dy || 0 != dx)
                     {
                         dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now_abs);
+                        ////IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d\n", dx, dy, x, y, z, w);
                         dx = dy = 0;
                     }
                     break;
@@ -1087,9 +1399,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dy = y-lasty+scrollrest;
-			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
 			scrollrest = dy % vscrolldivisor;
-            dy = 0;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dy) < scrolldythresh)
+            {
+                scrollrest = dy;
+                dy = 0;
+            }
+            if (dy)
+            {
+                dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
+                dy = 0;
+            }
 			break;
             
 		case MODE_HSCROLL:
@@ -1101,9 +1422,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dx = lastx-x+scrollrest;
-			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
 			scrollrest = dx % hscrolldivisor;
-            dx = 0;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dx) < scrolldxthresh)
+            {
+                scrollrest = dx;
+                dx = 0;
+            }
+            if (dx)
+            {
+                dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
+                dx = 0;
+            }
 			break;
             
 		case MODE_CSCROLL:
@@ -1117,9 +1447,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dx += lasty-y;
             else
                 dx += y-lasty;
-            dispatchScrollWheelEventX((dx+scrollrest)/cscrolldivisor, 0, 0, now_abs);
-            scrollrest=(dx+scrollrest)%cscrolldivisor;
-            dx = 0;
+            dx += scrollrest;
+            scrollrest = dx % cscrolldivisor;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dx) < scrolldxthresh)
+            {
+                scrollrest = dx;
+                dx = 0;
+            }
+            if (dx)
+            {
+                dispatchScrollWheelEventX(dx / cscrolldivisor, 0, 0, now_abs);
+                dx = 0;
+            }
 			break;
 
 		case MODE_DRAGNOTOUCH:
@@ -1164,7 +1504,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         draglocktemp = _modifierdown & draglocktempmask;
     }
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
+    {
+        if (dragTimer)
+            cancelTimer(dragTimer);
 		touchmode=MODE_DRAGLOCK;
+    }
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
@@ -1731,6 +2075,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"BogusDeltaThreshY",               &bogusdythresh},
         {"UnitsPerMMX",                     &xupmm},
         {"UnitsPerMMY",                     &yupmm},
+        {"ScrollDeltaThreshX",              &scrolldxthresh},
+        {"ScrollDeltaThreshY",              &scrolldythresh},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1768,6 +2114,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MomentumScrollTimer",             &momentumscrolltimer},
         {"ClickPadClickTime",               &clickpadclicktime},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
+        {"DragExitDelayTime",               &dragexitdelay},
     };
     
 	uint8_t oldmode = _touchPadModeByte;

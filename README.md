@@ -82,6 +82,21 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future date v1.8.8
+
+- Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
+
+- Implemented "Dragging" (double-tap-hold for drag) to be more like a real Mac.  Now the drag will remain in effect for one second after releasing your finger from the touchpad (before it was immediate).  This makes it easier to drag/resize/extend selections larger distance.  The timeout is controlled by DragLockDelayTime in the trackpad Info.plist.  It can be changed to zero (0) to revert to the original behavior.
+
+
+2013-08-15 v1.8.7
+
+- Fix a bug which prevents VoodooPS2Controller.kext from loading on 10.9 Mavericks.  The problem was the class ApplePS2Controller was not exported properly.
+
+2013-08-05 v1.8.6
+
+- Add support for HPQOEM:17F3 (HP ProBook 4440s)
+
 2013-07-01 v1.8.5
 
 - Added support for HPQOEM:17F0 (HP ProBook 4340s)
