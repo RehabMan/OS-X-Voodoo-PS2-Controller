@@ -141,6 +141,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
     
     _device = (ApplePS2MouseDevice *) provider;
     
+    _device->lock();
     resetMouse();
     
     if (identify() != 0) {
@@ -150,6 +151,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
         _bounds.maxx = modelData.x_max;
         _bounds.maxy = modelData.y_max;
     }
+    _device->unlock();
     
     _device = 0;
 
@@ -901,7 +903,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         return;
     }
 
+#ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
+#endif
 
     if (z < z_finger && isTouchMode()) {
         // Finger has been lifted
@@ -1007,7 +1011,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         }
     }
 
+#ifdef DEBUG_VERBOSE
     int tm2 = touchmode;
+#endif
     int dx = 0, dy = 0;
 
     DEBUG_LOG("touchmode=%d\n", touchmode);
@@ -1263,7 +1269,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     lasty = y;
     last_fingers = fingers;
 
+#ifdef DEBUG_VERBOSE
     DEBUG_LOG("ps2: dx=%d, dy=%d (%d,%d) z=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d wastriple=%d\n", dx, dy, x, y, z, tm1, tm2, touchmode, buttons, wasdouble, wastriple);
+#endif
 }
 
 void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers, int &dx, int &dy) {

@@ -52,6 +52,22 @@ OSDefineMetaClassAndStructors(ApplePS2SynapticsTouchPad, VoodooPS2TouchPadBase);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
+{
+    //
+    // Initialize this object's minimal state. This is invoked right after this
+    // object is instantiated.
+    //
+
+    if (!super::init(dict))
+        return false;
+
+    // initialize state...
+    _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
+
+    return true;
+}
+
 #if 0//MERGE
 <<<<<<< HEAD
 =======
@@ -71,7 +87,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     if (config)
     {
         // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
         if (disable && disable->isTrue())
         {
             config->release();
@@ -2017,7 +2033,10 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
 		return;
+
+    super::setParamPropertiesGated(config);
     
+#if 0
 	const struct {const char *name; int *var;} int32vars[]={
 		{"FingerZ",							&z_finger},
 		{"DivisorX",						&divisorx},
@@ -2116,12 +2135,12 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MiddleClickTime",                 &_maxmiddleclicktime},
         {"DragExitDelayTime",               &dragexitdelay},
     };
-    
-	uint8_t oldmode = _touchPadModeByte;
     int oldmousecount = mousecount;
     bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
+#endif
     
     // highrate?
+	uint8_t oldmode = _touchPadModeByte;
 	OSBoolean *bl;
 	if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
     {
@@ -2131,7 +2150,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 			_touchPadModeByte &= ~(1<<6);
         setProperty("UseHighRate", bl->isTrue());
     }
-    
+#if 0
     OSNumber *num;
     // 64-bit config items
     for (int i = 0; i < countof(int64vars); i++)
@@ -2198,7 +2217,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         divisorx = 1;
     if (!divisory)
         divisory = 1;
-
+#endif
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
     // extendedwmode is optional, used automatically for ClickPads
@@ -2210,7 +2229,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         _packetByteCount=0;
         _ringBuffer.reset();
     }
-
+#if 0
 //REVIEW: this should be done maybe only when necessary...
     touchmode=MODE_NOTOUCH;
 
@@ -2231,6 +2250,22 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
         updateTouchpadLED();
     }
+#endif
+}
+
+void ApplePS2SynapticsTouchPad::touchpadToggled()
+{
+//REVIEW: including the calls to super causes problems... compiler bug?
+    ////super:touchpadToggled();
+    updateTouchpadLED();
+}
+
+void ApplePS2SynapticsTouchPad::touchpadShutdown()
+{
+//REVIEW: including the calls to super causes problems... compiler bug?
+    ////super::touchpadShutdown();
+    if (ledpresent && !noled)
+        setTouchpadLED(0x10);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

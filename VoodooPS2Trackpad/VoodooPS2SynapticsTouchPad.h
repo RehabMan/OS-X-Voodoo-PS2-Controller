@@ -250,13 +250,17 @@ protected:
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
-    void setParamPropertiesGated(OSDictionary* dict);
+    virtual void setParamPropertiesGated(OSDictionary* dict);
     
     virtual bool deviceSpecificInit();
     
     virtual void initTouchPad();
 
+    virtual void touchpadToggled();
+    virtual void touchpadShutdown();
+
 public:
+    virtual bool init( OSDictionary * properties );
     virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
                                                SInt32 *    score );
     virtual void stop( IOService * provider );

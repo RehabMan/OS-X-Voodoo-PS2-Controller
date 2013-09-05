@@ -44,7 +44,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     if (config)
     {
         // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
         if (disable && disable->isTrue())
         {
             config->release();
@@ -676,6 +676,8 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
         {"BogusDeltaThreshY",               &bogusdythresh},
         {"UnitsPerMMX",                     &xupmm},
         {"UnitsPerMMY",                     &yupmm},
+        {"ScrollDeltaThreshX",              &scrolldxthresh},
+        {"ScrollDeltaThreshY",              &scrolldythresh},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -713,6 +715,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
         {"MomentumScrollTimer",             &momentumscrolltimer},
         {"ClickPadClickTime",               &clickpadclicktime},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
+        {"DragExitDelayTime",               &dragexitdelay},
     };
     
     int oldmousecount = mousecount;
@@ -725,7 +728,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
         {
             *int64vars[i].var = num->unsigned64BitValue();
-            DEBUG_LOG("%s::setProperty64(%s, %llu)\n", getName(), int64vars[i].name, *int64vars[i].var);
+            ////DEBUG_LOG("%s::setProperty64(%s, %llu)\n", getName(), int64vars[i].name, *int64vars[i].var);
             setProperty(int64vars[i].name, *int64vars[i].var, 64);
         }
     }
@@ -734,7 +737,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
 		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
         {
 			*boolvars[i].var = bl->isTrue();
-            DEBUG_LOG("%s::setPropertyBool(%s, %d)\n", getName(), boolvars[i].name, *boolvars[i].var);
+            ////DEBUG_LOG("%s::setPropertyBool(%s, %d)\n", getName(), boolvars[i].name, *boolvars[i].var);
             setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
         }
     }
@@ -743,7 +746,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
 		if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
         {
 			*int32vars[i].var = num->unsigned32BitValue();
-            DEBUG_LOG("%s::setProperty32(%s, %d)\n", getName(), int32vars[i].name, *int32vars[i].var);
+            ////DEBUG_LOG("%s::setProperty32(%s, %d)\n", getName(), int32vars[i].name, *int32vars[i].var);
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
     }
@@ -752,7 +755,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
-            DEBUG_LOG("%s::setPropertyLowBit(%s, %d)\n", getName(), lowbitvars[i].name, *lowbitvars[i].var);
+            ////DEBUG_LOG("%s::setPropertyLowBit(%s, %d)\n", getName(), lowbitvars[i].name, *lowbitvars[i].var);
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
     }

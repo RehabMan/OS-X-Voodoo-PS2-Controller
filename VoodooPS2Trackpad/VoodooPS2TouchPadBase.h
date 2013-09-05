@@ -231,7 +231,7 @@ protected:
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 buttons, uint64_t now, MBComingFrom from);
 
-    void setParamPropertiesGated(OSDictionary* dict);
+    virtual void setParamPropertiesGated(OSDictionary* dict);
 
 	virtual IOItemCount buttonCount();
 	virtual IOFixed     resolution();
