@@ -44,6 +44,7 @@
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
+#define kChangeCapsKeyToHyper               "Change capslock to hyper key"
 #define kSwapCommandOption                  "Swap command and option"
 #define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
 #define kMakeApplicationKeyAppleFN          "Make Application key into Apple Fn key"
@@ -716,6 +717,17 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         }
         setProperty(kSwapCapsLockLeftControl, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
+
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kChangeCapsKeyToHyper));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x6a];
+        }
+        else {
+            _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x3a];
+        }
+        setProperty(kChangeCapsKeyToHyper, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
+    }
     
     xml = OSDynamicCast(OSBoolean, dict->getObject(kSwapCommandOption));
     if (xml) {
@@ -786,7 +798,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject(kUseISOLayoutKeyboard));
     if (xml) {
         if (xml->isTrue()) {
-            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 'ï¿½ï¿½'
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x29];     //Grave '~'
         }
         else {
