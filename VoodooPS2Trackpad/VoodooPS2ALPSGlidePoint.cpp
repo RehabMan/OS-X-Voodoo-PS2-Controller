@@ -936,7 +936,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             if (dy_history.count() > momentumscrollsamplesmin &&
                     (momentumscrollinterval = time_history.newest() - time_history.oldest())) {
                 momentumscrollsum = dy_history.sum();
-                momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
+                momentumscrollcurrent = momentumscrolltimer * -momentumscrollsum;
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
                 setTimerTimeout(scrollTimer, momentumscrolltimer);
