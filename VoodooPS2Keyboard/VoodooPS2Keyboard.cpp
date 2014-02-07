@@ -244,6 +244,11 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
 
+    parseAction("3b d, 3a d, 7e d, 7e u, 3a u, 3b u", _actionSwipe4Up, countof(_actionSwipe4Up));
+    parseAction("3b d, 3a d, 7d d, 7d u, 3a u, 3b u", _actionSwipe4Down, countof(_actionSwipe4Down));
+    parseAction("3b d, 3a d, 7b d, 7b u, 3a u, 3b u", _actionSwipe4Left, countof(_actionSwipe4Left));
+    parseAction("3b d, 3a d, 7c d, 7c u, 3a u, 3b u", _actionSwipe4Right, countof(_actionSwipe4Right));
+    
     //
     // Load settings specfic to the Platform Profile...
     //
@@ -1522,6 +1527,26 @@ void ApplePS2Keyboard::receiveMessage(int message, void* data)
             
         case kPS2M_swipeUp:
 			DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Up\n");
+            sendKeySequence(_actionSwipeUp);
+            break;
+        
+        case kPS2M_swipe4Down:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe 4 Down\n");
+            sendKeySequence(_actionSwipeDown);
+            break;
+            
+        case kPS2M_swipe4Left:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe 4 Left\n");
+            sendKeySequence(_actionSwipeLeft);
+			break;
+            
+		case kPS2M_swipe4Right:
+			DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe 4 Right\n");
+            sendKeySequence(_actionSwipeRight);
+			break;
+            
+        case kPS2M_swipe4Up:
+			DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe 4 Up\n");
             sendKeySequence(_actionSwipeUp);
             break;
     }

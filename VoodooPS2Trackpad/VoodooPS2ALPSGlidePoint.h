@@ -214,6 +214,7 @@ private:
     hw_init hw_init;
     decode_fields decode_fields;
     process_packet process_packet;
+    UInt32 cur_button;
 //    set_abs_params set_abs_params;
     
 protected:

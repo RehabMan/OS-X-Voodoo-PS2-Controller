@@ -83,9 +83,11 @@ protected:
     int scrolldxthresh, scrolldythresh;
     int immediateclick;
 
-    // three finger state
+    // three finger and four finger state
     uint8_t inSwipeLeft, inSwipeRight;
     uint8_t inSwipeUp, inSwipeDown;
+    uint8_t inSwipe4Left, inSwipe4Right;
+    uint8_t inSwipe4Up, inSwipe4Down;
     int xmoved, ymoved;
 
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
