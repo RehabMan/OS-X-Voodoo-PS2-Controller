@@ -503,21 +503,20 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     }
     // Button status can appear in normal packet...
     if (0 == raw_buttons) {
-        buttons = cur_button;
+        buttons = lastbuttons;
     } else {
         buttons = raw_buttons;
+        lastbuttons = buttons;
     }
+    
+    lastx2 = x; lasty2 = y;
     
     // normal mode: middle button is not pressed or no movement made
     if ( ((0 == x) && (0 == y)) || (0 == (buttons & 0x04))) {
-        y += y >> 2; x += x >> 2;
+        y += y >> 1; x += x >> 1;
         DEBUG_LOG("Dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
                   x, y, raw_buttons, buttons, z);
-        if (0 == raw_buttons) {
-            dispatchRelativePointerEventX(x, y, buttons, now_abs);
-        } else {
-            dispatchRelativePointerEventX(x, y, raw_buttons, now_abs);
-        }
+        dispatchRelativePointerEventX(x, y, buttons, now_abs);
     } else {
         // scroll mode
         y = -y; x = -x;
@@ -619,7 +618,21 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         buttons |= f.ts_right ? 0x02 : 0;
         buttons |= f.ts_middle ? 0x04 : 0;
     }
+    
+    lastbuttons = buttons;
+    
+    // if no trackpad or trackstick movement, dispatch directly
+    if ((0 == f.x) && (0 == f.y) && (0 == lastx2) && (0 == lasty2)) {
+        dispatchEventsWithInfo(0, 0, f.z, fingers, buttons);
+        return;
+    }
+    
+    // trackstick movement, ignore it since trackstick should be considered later
+    if ((0 != lastx2) || (0 != lasty2)) {
+        return;
+    }
 
+    // trackpad movement, dispatch normally
     dispatchEventsWithInfo(f.x, f.y, f.z, fingers, buttons);
 }
 
@@ -771,9 +784,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     DEBUG_LOG("%s::dispatchEventsWithInfo: x=%d, y=%d, z=%d, fingers=%d, buttons=%d\n",
     getName(), xraw, yraw, z, fingers, buttonsraw);
     
-    // store current raw button for trackstick...
-    cur_button = buttonsraw;
-
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm) {
         xraw = xraw * yupmm / xupmm;
