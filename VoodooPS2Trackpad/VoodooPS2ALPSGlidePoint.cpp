@@ -511,6 +511,11 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     
     lastx2 = x; lasty2 = y;
     
+    ignoreall = FALSE;
+    if ((0 != x) || (0 != y)) {
+        ignoreall = TRUE;
+    }
+    
     // normal mode: middle button is not pressed or no movement made
     if ( ((0 == x) && (0 == y)) || (0 == (buttons & 0x04))) {
         y += y >> 1; x += x >> 1;
@@ -619,20 +624,6 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         buttons |= f.ts_middle ? 0x04 : 0;
     }
     
-    lastbuttons = buttons;
-    
-    // if no trackpad or trackstick movement, dispatch directly
-    if ((0 == f.x) && (0 == f.y) && (0 == lastx2) && (0 == lasty2)) {
-        dispatchEventsWithInfo(0, 0, f.z, fingers, buttons);
-        return;
-    }
-    
-    // trackstick movement, ignore it since trackstick should be considered later
-    if ((0 != lastx2) || (0 != lasty2)) {
-        return;
-    }
-
-    // trackpad movement, dispatch normally
     dispatchEventsWithInfo(f.x, f.y, f.z, fingers, buttons);
 }
 
