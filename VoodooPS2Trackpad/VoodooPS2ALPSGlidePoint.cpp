@@ -217,6 +217,9 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     scrolldxthresh = 15;
     scrolldythresh = 15;
 
+    dragexitdelay = 600000000;
+    dragTimer = 0;
+    
     return true;
 }
 
@@ -849,92 +852,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         return;
     }
 
-    // double tap in "disable zone" (upper left) for trackpad enable/disable
-    //    diszctrl = 0  means automatic enable this feature if trackpad has LED
-    //    diszctrl = 1  means always enable this feature
-    //    diszctrl = -1 means always disable this feature
-    if ((0 == diszctrl && ledpresent) || 1 == diszctrl) {
-        DEBUG_LOG("checking disable zone touch. Touchmode=%d\n", touchmode);
-        // deal with taps in the disable zone
-        // look for a double tap inside the disable zone to enable/disable touchpad
-        switch (touchmode) {
-            case MODE_NOTOUCH:
-                if (isFingerTouch(z) && isInDisableZone(x, y)) {
-                    touchtime = now_ns;
-                    touchmode = MODE_WAIT1RELEASE;
-                    DEBUG_LOG("ps2: detected touch1 in disable zone\n");
-                }
-                break;
-            case MODE_WAIT1RELEASE:
-                if (z < z_finger) {
-                    DEBUG_LOG("ps2: detected untouch1 in disable zone...\n");
-                    if (now_ns - touchtime < maxtaptime) {
-                        DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
-                        untouchtime = now_ns;
-                        touchmode = MODE_WAIT2TAP;
-                    }
-                    else {
-                        DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                else {
-                    if (!isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT1RELEASE\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            case MODE_WAIT2TAP:
-                if (isFingerTouch(z)) {
-                    if (isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: detected touch2 in disable zone...\n");
-                        if (now_ns - untouchtime < maxdragtime) {
-                            DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
-                            touchtime = now_ns;
-                            touchmode = MODE_WAIT2RELEASE;
-                        }
-                        else {
-                            DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
-                            touchmode = MODE_NOTOUCH;
-                        }
-                    }
-                    else {
-                        DEBUG_LOG("ps2: bad input detected in MODE_WAIT2TAP x=%d, y=%d, z=%d\n", x, y, z);
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            case MODE_WAIT2RELEASE:
-                if (z < z_finger) {
-                    DEBUG_LOG("ps2: detected untouch2 in disable zone...\n");
-                    if (now_ns - touchtime < maxtaptime) {
-                        DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
-                        // enable/disable trackpad here
-                        ignoreall = !ignoreall;
-                        touchpadToggled();
-                        touchmode = MODE_NOTOUCH;
-                    }
-                    else {
-                        DEBUG_LOG("ps2: not in time, ignoring... setting MODE_NOTOUCH\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                else {
-                    if (!isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT2RELEASE\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            default:; // nothing...
-        }
-        if (touchmode >= MODE_WAIT1RELEASE) {
-            DEBUG_LOG("Touchmode is WAIT1RELEASE, returning\n");
-            return;
-        }
-    }
-
     // if trackpad input is supposed to be ignored, then don't do anything
     if (ignoreall) {
         DEBUG_LOG("ignoreall is set, returning\n");
@@ -1017,9 +934,16 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     break;
             }
         } else {
-            if ((touchmode == MODE_DRAG || touchmode == MODE_DRAGLOCK) && (draglock || draglocktemp))
-                touchmode = MODE_DRAGNOTOUCH;
-            else {
+            if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK)
+                && (draglock || draglocktemp || (dragTimer && dragexitdelay)))
+            {
+                touchmode=MODE_DRAGNOTOUCH;
+                if (!draglock && !draglocktemp)
+                {
+                    cancelTimer(dragTimer);
+                    setTimerTimeout(dragTimer, dragexitdelay);
+                }
+            } else {
                 touchmode = MODE_NOTOUCH;
                 draglocktemp = 0;
             }
@@ -1055,7 +979,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 #endif
     int dx = 0, dy = 0;
 
-    DEBUG_LOG("touchmode=%d\n", touchmode);
+    DEBUG_LOG("ps2: touchmode=%d, buttons = %d\n", touchmode, buttons);
     switch (touchmode) {
         case MODE_DRAG:
         case MODE_DRAGLOCK:
@@ -1332,7 +1256,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
     if (touchmode == MODE_DRAGNOTOUCH && isFingerTouch(z)) {
         DEBUG_LOG("switch from dragnotouch to drag lock\n");
-        touchmode = MODE_DRAGLOCK;
+        if (dragTimer)
+            cancelTimer(dragTimer);
+        touchmode=MODE_DRAGLOCK;
     }
     ////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
     if (MODE_MTOUCH != touchmode && (fingers > 1) && isFingerTouch(z)) {
