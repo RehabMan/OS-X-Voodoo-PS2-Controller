@@ -5,7 +5,7 @@
 	<key>Source Code</key>
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
-	<string>1.8.9, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
+	<string>1.8.10, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Keyboard</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.8.9</string>
+	<string>1.8.10</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ApplePS2Keyboard</key>
@@ -218,6 +218,25 @@
 					<string>ProBook-102;ProBook 4440s</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
+					<key>HaswellEnvy</key>
+					<dict>
+						<key>BrightnessHack</key>
+						<true/>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e045=e037</string>
+							<string>e0ab=0;bogus Fn+F2/F3</string>
+						</array>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e019=42;next</string>
+							<string>e010=4d;previous</string>
+						</array>
+					</dict>
+					<key>1962</key>
+					<string>HaswellEnvy;HP Envy 15-j063cl</string>
+					<key>1966</key>
+					<string>HaswellEnvy;HP Envy 17t-j000</string>
 				</dict>
 				<key>DELL</key>
 				<dict>
@@ -420,7 +439,7 @@
 		<key>com.apple.kpi.unsupported</key>
 		<string>8.0.0</string>
 		<key>org.rehabman.voodoo.driver.PS2Controller</key>
-		<string>1.8.9</string>
+		<string>1.8.10</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
