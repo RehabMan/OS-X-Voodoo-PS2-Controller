@@ -53,7 +53,7 @@ protected:
 	bool dragging;
 	bool draglock;
     int draglocktemp;
-	bool hscroll, scroll;
+	bool hscroll, vscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;

@@ -92,7 +92,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
 	dragging=true;
 	draglock=false;
     draglocktemp=0;
-	hscroll=false;
+	hscroll=vscroll=false;
 	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
@@ -713,6 +713,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
         {"Dragging",                        &dragging},
         {"DragLock",                        &draglock},
         {"TrackpadHorizScroll",             &hscroll},
+        {"TrackpadVertScroll",              &vscroll},
         {"TrackpadScroll",                  &scroll},
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},

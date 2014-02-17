@@ -206,8 +206,9 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     ledge = 0;
     setupMaxes();
     tedge = 0;
-    vscrolldivisor = 1;
-    hscrolldivisor = 1;
+    hscroll = vscroll = false;
+    vscrolldivisor = 0;
+    hscrolldivisor = 0;
     divisorx = 40;
     divisory = 40;
     hscrolldivisor = 50;
@@ -309,11 +310,11 @@ void ApplePS2ALPSGlidePoint::packetReady() {
         UInt8 *packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
         if ((packet[0] & modelData.mask0) == modelData.byte0) {
-            DEBUG_LOG("Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+            DEBUG_LOG("ps2: Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             (this->*process_packet)(packet);
             _ringBuffer.advanceTail(modelData.pktsize);
         } else {
-            DEBUG_LOG("Intercepted bare PS/2 packet..ignoring\n");
+            DEBUG_LOG("ps2: Intercepted bare PS/2 packet..ignoring\n");
             // Ignore bare PS/2 packet for now...messes with the actual full 6-byte ALPS packet above
 //            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
             _ringBuffer.advanceTail(kPacketLengthSmall);
@@ -462,7 +463,7 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     UInt32 buttons = 0, raw_buttons = 0;
 
     if (!(packet[0] & 0x40)) {
-        DEBUG_LOG("Bad trackstick packet, disregarding...\n");
+        DEBUG_LOG("ps2: bad trackstick packet, disregarding...\n");
         return;
     }
 
@@ -470,7 +471,7 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
      * of a stream of trackstick data. Filter these out
      */
     if (packet[1] == 0x7f && packet[2] == 0x7f && packet[3] == 0x7f) {
-        DEBUG_LOG("Ignoring trackstick packet that indicates end of stream\n");
+        DEBUG_LOG("ps2: ignoring trackstick packet that indicates end of stream\n");
         return;
     }
 
@@ -522,13 +523,13 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     // normal mode: middle button is not pressed or no movement made
     if ( ((0 == x) && (0 == y)) || (0 == (buttons & 0x04))) {
         y += y >> 1; x += x >> 1;
-        DEBUG_LOG("Dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
+        DEBUG_LOG("ps2: trackStick: dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
                   x, y, raw_buttons, buttons, z);
         dispatchRelativePointerEventX(x, y, buttons, now_abs);
     } else {
         // scroll mode
         y = -y; x = -x;
-        DEBUG_LOG("%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n", getName(), y, x);
+        DEBUG_LOG("ps2: trackStick: dispatchScrollWheelEventX: dv=%d, dh=%d\n", y, x);
         dispatchScrollWheelEventX(y, x, 0, now_abs);
     }
 }
@@ -551,7 +552,7 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
      * bit 6 of packet[4] set.
      */
     if (modelData.multi_packet) {
-        DEBUG_LOG("Handling multi-packet\n");
+        DEBUG_LOG("ps2: trackPad: handling multi-packet\n");
         /*
          * Sometimes a position packet will indicate a multi-packet
          * sequence, but then what follows is another position
@@ -561,6 +562,8 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         if (f.is_mp) {
             fingers = f.fingers;
             bmapFingers = processBitmap(f.x_map, f.y_map, &x1, &y1, &x2, &y2);
+            
+            DEBUG_LOG("ps2: trackPad: fingers=%d, bmapFingers=%d\n", fingers, bmapFingers);
             
             /*
              * We shouldn't report more than one finger if
@@ -589,7 +592,7 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
     }
 
     if (!modelData.multi_packet && (f.first_mp)) {
-        DEBUG_LOG("Detected multi-packet first packet, waiting to handle\n");
+        DEBUG_LOG("ps2: trackPad: detected multi-packet first packet, waiting to handle\n");
         modelData.multi_packet = 1;
         memcpy(modelData.multi_data, packet, sizeof(modelData.multi_data));
         return;
@@ -1142,7 +1145,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
         case MODE_VSCROLL:
             if (!vsticky && (x < redge || fingers > 1 || z > zlimit)) {
-                DEBUG_LOG("Switch back to notoch. redge=%d, vsticky=%d, zlimit=%d\n", redge, vsticky, zlimit);
+                DEBUG_LOG("Switch back to notouch. redge=%d, vsticky=%d, zlimit=%d\n", redge, vsticky, zlimit);
                 touchmode = MODE_NOTOUCH;
                 break;
             }
@@ -1288,13 +1291,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         DEBUG_LOG("new touchmode=%d\n", touchmode);
     }
     if ((MODE_NOTOUCH == touchmode || (MODE_HSCROLL == touchmode && y >= bedge)) &&
-            z > z_finger && x > redge && vscrolldivisor && scroll) {
-        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d\n", redge, bedge);
+            z > z_finger && x > redge && vscrolldivisor && vscroll) {
+        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d, vscrolldivisor=%d, scroll=%d\n", redge, bedge, vscrolldivisor, scroll);
         touchmode = MODE_VSCROLL;
         scrollrest = 0;
     }
     if ((MODE_NOTOUCH == touchmode || (MODE_VSCROLL == touchmode && x <= redge)) &&
-            z > z_finger && y > bedge && hscrolldivisor && hscroll && scroll) {
+            z > z_finger && y > bedge && hscrolldivisor && hscroll && vscroll) {
         DEBUG_LOG("switch to hscroll touchmode\n");
         touchmode = MODE_HSCROLL;
         scrollrest = 0;
@@ -1434,7 +1437,7 @@ int ApplePS2ALPSGlidePoint::processBitmap(unsigned int xMap, unsigned int yMap, 
                 (2 * (modelData.y_bits - 1));
     }
 
-    DEBUG_LOG("Process bitmap, fingers=%d\n", fingers);
+    DEBUG_LOG("ps2: Process bitmap, fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d, area = %d\n", fingers, *x1, *x2, *y1, *y2, abs(*x1 - *x2) * abs(*y1 - *y2));
 
     return fingers;
 }
