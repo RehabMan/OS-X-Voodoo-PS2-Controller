@@ -2291,8 +2291,38 @@ error:
 }
 
 bool ApplePS2ALPSGlidePoint::hwInitDolphinV1() {
-    TPS2Request<5> request;
+    TPS2Request<16> request;
     int cmdCount = 0;
+    /*
+     		int array[]={0xE8, 0x00, 0xE7, 0xE7,  
+                         0xE7, 0xE9, 0xEC, 0xEC, 
+                         0xEC, 0xE9, 0xEA, 0xEA, 
+                         0xF3, 0x64, 0xF3, 0x28};
+     */
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE8;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0x00;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE9;
+    
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE9;
+    
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEA;
     
     request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[cmdCount++].inOrOut = kDP_SetMouseStreamMode;
