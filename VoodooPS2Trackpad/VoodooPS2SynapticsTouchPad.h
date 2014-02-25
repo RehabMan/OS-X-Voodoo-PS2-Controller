@@ -28,6 +28,7 @@
 #include <IOKit/IOCommandGate.h>
 #include "Decay.h"
 #include "VoodooPS2TouchPadBase.h"
+#include <IOKit/acpi/IOACPIPlatformDevice.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
@@ -43,6 +44,7 @@ class EXPORT ApplePS2SynapticsTouchPad : public VoodooPS2TouchPadBase
 protected:
     UInt8               _touchPadType; // from identify: either 0x46 or 0x47
     UInt8               _touchPadModeByte;
+    IOACPIPlatformDevice*_provider;
 
 #if 0//MERGE
     IOCommandGate*      _cmdGate;

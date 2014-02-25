@@ -34,6 +34,7 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
+#include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
 // Constants for Info.plist settings
@@ -408,9 +409,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
     pWorkLoop->addEventSource(_cmdGate);
     
     // get IOACPIPlatformDevice for Device (PS2K)
+    //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
-    if (_provider)
-        _provider->retain();
 
     //
     // get brightness levels for ACPI based brightness keys
@@ -557,6 +557,11 @@ bool ApplePS2Keyboard::start(IOService * provider)
     _device->installMessageAction( this,
                                   OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Keyboard::receiveMessage));
     _messageHandlerInstalled = true;
+    
+    //
+    // Tell ACPIPS2Nub that we are interested in ACPI notifications
+    //
+    setProperty(kDeliverNotifications, true);
 
     DEBUG_LOG("ApplePS2Keyboard::start leaving.\n");
     
@@ -965,6 +970,32 @@ void ApplePS2Keyboard::stop(IOService * provider)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argument)
+{
+#ifdef DEBUG
+    if (argument)
+        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p, argument=%p, argument=%04x, cmp=%x\n", type, provider, argument, *static_cast<UInt32*>(argument), kIOACPIMessageDeviceNotification);
+    else
+        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p", type, provider);
+#endif
+    
+    if (type == kIOACPIMessageDeviceNotification && NULL != argument)
+    {
+        UInt32 arg = *static_cast<UInt32*>(argument);
+        if ((arg & 0xFFFF0000) == 0)
+        {
+            UInt8 packet[kPacketLength];
+            packet[0] = arg >> 8;
+            packet[1] = arg;
+            if (1 == packet[0] || 2 == packet[0])
+                dispatchKeyboardEventWithPacket(packet, kPacketLength);
+        }
+    }
+    return kIOReturnSuccess;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2InterruptAction
 {
     ////IOLog("ps2interrupt: scanCode = %02x\n", data);
@@ -1303,6 +1334,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             case 0x012a: // header or trailer for PrintScreen
                 return false;
         }
+    }
+    
+    // codes e0f0 through e0ff can be used to call back into ACPI methods on this device
+    if (keyCode >= 0x01f0 && keyCode <= 0x01ff && _provider != NULL)
+    {
+        // evaluate RKA[1-F] for these keys
+        char method[5] = "RKAx";
+        char n = keyCode - 0x01f0;
+        method[3] = n < 0xA ? n + '0' : n + 'A';
+        _provider->evaluateObject(method);
     }
 
     // handle special cases

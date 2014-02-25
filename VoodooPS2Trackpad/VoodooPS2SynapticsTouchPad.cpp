@@ -35,6 +35,8 @@
 //#define PACKET_DEBUG
 #endif
 
+#define kTPDN "TPDN" // Trackpad Disable Notification
+
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
@@ -106,6 +108,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _lastdata = 0;
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
     _cmdGate = 0;
+    _provider = NULL;
 
     // set defaults for configuration items
     
@@ -237,7 +240,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.10 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.11 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     
@@ -549,6 +552,20 @@ bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
     // Enable the touchpad itself.
     //
     setTouchpadModeByte();
+    
+    // get IOACPIPlatformDevice for Device (PS2M)
+    //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
+    _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2M");
+    if (_provider && kIOReturnSuccess != _provider->validateObject(kTPDN))
+    {
+        _provider->release();
+        _provider = NULL;
+    }
+    
+    //
+    // Update LED -- it could have been disabled then computer was restarted
+    //
+    updateTouchpadLED();
     
     return true;
 }
@@ -895,6 +912,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
+        // New lenvo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
+        // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
+        UInt32 combinedButtons = passbuttons | (packet[0] & 0x3) | (packet[3] & 0x3);
+
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         if (mousemiddlescroll && (packet[1] & 0x4)) // only for physical middle button
@@ -910,10 +931,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        dispatchRelativePointerEventX(dx, -dy, buttons, now_abs);
+        dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
 #ifdef DEBUG_VERBOSE
         static int count = 0;
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, buttons, count++);
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
 #endif
         return;
     }
@@ -2304,6 +2325,17 @@ void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 {
     if (ledpresent && !noled)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
+
+    // if PS2M implements "TPDN" then, we can notify it of changes to LED state
+    // (allows implementation of LED change in ACPI)
+    if (_provider)
+    {
+        if (OSNumber* num = OSNumber::withNumber(ignoreall, 32))
+        {
+            _provider->evaluateObject(kTPDN, NULL, (OSObject**)&num, 1);
+            num->release();
+        }
+    }
 }
 
 bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
