@@ -45,8 +45,6 @@ protected:
     UInt8               _touchPadModeByte;
 
 #if 0//MERGE
-<<<<<<< HEAD
-=======
     IOCommandGate*      _cmdGate;
     
 	int z_finger;
@@ -216,7 +214,6 @@ protected:
     
     inline bool isTouchMode() { return touchmode & 1; }
     
->>>>>>> master
 #endif //#if 0//MERGE
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
@@ -239,13 +236,10 @@ protected:
     void queryCapabilities(void);
 
 #if 0//MERGE
-<<<<<<< HEAD
-=======
     void onButtonTimer(void);
     
     void onDragTimer(void);
     
->>>>>>> master
 #endif
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);

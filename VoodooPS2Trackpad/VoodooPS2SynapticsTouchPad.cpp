@@ -69,8 +69,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 }
 
 #if 0//MERGE
-<<<<<<< HEAD
-=======
 bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 {
     //
@@ -253,10 +251,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     return true;
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
->>>>>>> master
 #endif //#if 0//MERGE
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
@@ -456,8 +453,6 @@ bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
 {
     //
 #if 0//MERGE
-<<<<<<< HEAD
-=======
     // The driver has been instructed to start. This is called after a
     // successful probe and match.
     //
@@ -542,7 +537,6 @@ bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
     _device->lock();
     
     //
->>>>>>> master
 #endif//#if 0//MERGE
     // Query the touchpad for the capabilities we need to know.
     //
