@@ -62,7 +62,10 @@
 // ApplePS2Keyboard Class Declaration
 //
 
-#define kPacketLength 2
+#define kPacketLength (2+6+8) // 2 bytes for key data, 6-bytes not used, 8 bytes for timestamp
+#define kPacketKeyOffset 0
+#define kPacketTimeOffset 8
+#define kPacketKeyDataLength 2
 
 class EXPORT ApplePS2Keyboard : public IOHIKeyboard
 {
@@ -91,7 +94,7 @@ private:
     OSArray*                    _keysStandard;
     OSArray*                    _keysSpecial;
     bool                        _swapcommandoption;
-    bool                        _logscancodes;
+    int                         _logscancodes;
     UInt32                      _f12ejectdelay;
     enum { kTimerSleep, kTimerEject } _timerFunc;
     
@@ -121,7 +124,16 @@ private:
     // special hack for Envy brightness access, while retaining F2/F3 functionality
     bool                        _brightnessHack;
     
-    virtual bool dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize);
+    // macro processing
+    OSData**                    _macroTranslation;
+    OSData**                    _macroInversion;
+    UInt8*                      _macroBuffer;
+    int                         _macroMax;
+    int                         _macroCurrent;
+    uint64_t                    _macroMaxTime;
+    IOTimerEventSource*         _macroTimer;
+    
+    virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
@@ -135,6 +147,13 @@ private:
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     void setParamPropertiesGated(OSDictionary* dict);
     void onSleepEjectTimer(void);
+    
+    static OSData** loadMacroData(OSDictionary* dict, const char* name);
+    static void freeMacroData(OSData** data);
+    void onMacroTimer(void);
+    bool invertMacros(const UInt8* packet);
+    void dispatchInvertBuffer();
+    static bool compareMacro(const UInt8* packet, const UInt8* data, int count);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
