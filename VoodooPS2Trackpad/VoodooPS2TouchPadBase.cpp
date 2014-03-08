@@ -92,7 +92,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
 	dragging=true;
 	draglock=false;
     draglocktemp=0;
-	hscroll=false;
+	hscroll=vscroll=false;
 	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
@@ -580,11 +580,24 @@ UInt32 VoodooPS2TouchPadBase::middleButton(UInt32 buttons, uint64_t now_abs, MBC
 
 void VoodooPS2TouchPadBase::onDragTimer(void)
 {
-    touchmode=MODE_NOTOUCH;
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-    UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
-    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    if (MODE_DRAGNOTOUCH==touchmode)
+    {
+        touchmode=MODE_NOTOUCH;
+        
+        uint64_t now_abs;
+        clock_get_uptime(&now_abs);
+        UInt32 buttons = middleButton(lastbuttons & ~0x01, now_abs, fromPassthru);
+        DEBUG_LOG("ps2: onDragTimer, button = %d\n", buttons);
+        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    }
+    else
+    {
+        //REVIEW: for debugging...
+        IOLog("rehab: onDragTimer called with unexpected mode = %d\n", touchmode);
+    }
+    //TODO: cancel dragnotouch mode, revert to notouch
+    //TODO: send lbutton up without modifying other buttons
+    //TODO: find other places the timer should be cancelled.
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -700,6 +713,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
         {"Dragging",                        &dragging},
         {"DragLock",                        &draglock},
         {"TrackpadHorizScroll",             &hscroll},
+        {"TrackpadVertScroll",              &vscroll},
         {"TrackpadScroll",                  &scroll},
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},

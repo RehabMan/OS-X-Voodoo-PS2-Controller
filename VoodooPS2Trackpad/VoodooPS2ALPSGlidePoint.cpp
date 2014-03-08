@@ -206,8 +206,9 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     ledge = 0;
     setupMaxes();
     tedge = 0;
-    vscrolldivisor = 1;
-    hscrolldivisor = 1;
+    hscroll = vscroll = false;
+    vscrolldivisor = 0;
+    hscrolldivisor = 0;
     divisorx = 40;
     divisory = 40;
     hscrolldivisor = 50;
@@ -217,6 +218,9 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     scrolldxthresh = 15;
     scrolldythresh = 15;
 
+    dragexitdelay = 600000000;
+    dragTimer = 0;
+    
     return true;
 }
 
@@ -306,11 +310,11 @@ void ApplePS2ALPSGlidePoint::packetReady() {
         UInt8 *packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
         if ((packet[0] & modelData.mask0) == modelData.byte0) {
-            DEBUG_LOG("Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+            DEBUG_LOG("ps2: Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             (this->*process_packet)(packet);
             _ringBuffer.advanceTail(modelData.pktsize);
         } else {
-            DEBUG_LOG("Intercepted bare PS/2 packet..ignoring\n");
+            DEBUG_LOG("ps2: Intercepted bare PS/2 packet..ignoring\n");
             // Ignore bare PS/2 packet for now...messes with the actual full 6-byte ALPS packet above
 //            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
             _ringBuffer.advanceTail(kPacketLengthSmall);
@@ -459,7 +463,7 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     UInt32 buttons = 0, raw_buttons = 0;
 
     if (!(packet[0] & 0x40)) {
-        DEBUG_LOG("Bad trackstick packet, disregarding...\n");
+        DEBUG_LOG("ps2: bad trackstick packet, disregarding...\n");
         return;
     }
 
@@ -467,7 +471,7 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
      * of a stream of trackstick data. Filter these out
      */
     if (packet[1] == 0x7f && packet[2] == 0x7f && packet[3] == 0x7f) {
-        DEBUG_LOG("Ignoring trackstick packet that indicates end of stream\n");
+        DEBUG_LOG("ps2: ignoring trackstick packet that indicates end of stream\n");
         return;
     }
 
@@ -503,25 +507,29 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     }
     // Button status can appear in normal packet...
     if (0 == raw_buttons) {
-        buttons = cur_button;
+        buttons = lastbuttons;
     } else {
         buttons = raw_buttons;
+        lastbuttons = buttons;
+    }
+    
+    lastx2 = x; lasty2 = y;
+    
+    ignoreall = FALSE;
+    if ((0 != x) || (0 != y)) {
+        ignoreall = TRUE;
     }
     
     // normal mode: middle button is not pressed or no movement made
     if ( ((0 == x) && (0 == y)) || (0 == (buttons & 0x04))) {
-        y += y >> 2; x += x >> 2;
-        DEBUG_LOG("Dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
+        y += y >> 1; x += x >> 1;
+        DEBUG_LOG("ps2: trackStick: dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
                   x, y, raw_buttons, buttons, z);
-        if (0 == raw_buttons) {
-            dispatchRelativePointerEventX(x, y, buttons, now_abs);
-        } else {
-            dispatchRelativePointerEventX(x, y, raw_buttons, now_abs);
-        }
+        dispatchRelativePointerEventX(x, y, buttons, now_abs);
     } else {
         // scroll mode
         y = -y; x = -x;
-        DEBUG_LOG("%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n", getName(), y, x);
+        DEBUG_LOG("ps2: trackStick: dispatchScrollWheelEventX: dv=%d, dh=%d\n", y, x);
         dispatchScrollWheelEventX(y, x, 0, now_abs);
     }
 }
@@ -544,7 +552,7 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
      * bit 6 of packet[4] set.
      */
     if (modelData.multi_packet) {
-        DEBUG_LOG("Handling multi-packet\n");
+        DEBUG_LOG("ps2: trackPad: handling multi-packet\n");
         /*
          * Sometimes a position packet will indicate a multi-packet
          * sequence, but then what follows is another position
@@ -554,6 +562,8 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         if (f.is_mp) {
             fingers = f.fingers;
             bmapFingers = processBitmap(f.x_map, f.y_map, &x1, &y1, &x2, &y2);
+            
+            DEBUG_LOG("ps2: trackPad: fingers=%d, bmapFingers=%d\n", fingers, bmapFingers);
             
             /*
              * We shouldn't report more than one finger if
@@ -582,7 +592,7 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
     }
 
     if (!modelData.multi_packet && (f.first_mp)) {
-        DEBUG_LOG("Detected multi-packet first packet, waiting to handle\n");
+        DEBUG_LOG("ps2: trackPad: detected multi-packet first packet, waiting to handle\n");
         modelData.multi_packet = 1;
         memcpy(modelData.multi_data, packet, sizeof(modelData.multi_data));
         return;
@@ -619,7 +629,7 @@ void ApplePS2ALPSGlidePoint::processTouchpadPacketV3(UInt8 *packet) {
         buttons |= f.ts_right ? 0x02 : 0;
         buttons |= f.ts_middle ? 0x04 : 0;
     }
-
+    
     dispatchEventsWithInfo(f.x, f.y, f.z, fingers, buttons);
 }
 
@@ -771,9 +781,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     DEBUG_LOG("%s::dispatchEventsWithInfo: x=%d, y=%d, z=%d, fingers=%d, buttons=%d\n",
     getName(), xraw, yraw, z, fingers, buttonsraw);
     
-    // store current raw button for trackstick...
-    cur_button = buttonsraw;
-
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm) {
         xraw = xraw * yupmm / xupmm;
@@ -846,92 +853,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         // touch input was shortly after typing and outside the "zone"
         // ignore it...
         return;
-    }
-
-    // double tap in "disable zone" (upper left) for trackpad enable/disable
-    //    diszctrl = 0  means automatic enable this feature if trackpad has LED
-    //    diszctrl = 1  means always enable this feature
-    //    diszctrl = -1 means always disable this feature
-    if ((0 == diszctrl && ledpresent) || 1 == diszctrl) {
-        DEBUG_LOG("checking disable zone touch. Touchmode=%d\n", touchmode);
-        // deal with taps in the disable zone
-        // look for a double tap inside the disable zone to enable/disable touchpad
-        switch (touchmode) {
-            case MODE_NOTOUCH:
-                if (isFingerTouch(z) && isInDisableZone(x, y)) {
-                    touchtime = now_ns;
-                    touchmode = MODE_WAIT1RELEASE;
-                    DEBUG_LOG("ps2: detected touch1 in disable zone\n");
-                }
-                break;
-            case MODE_WAIT1RELEASE:
-                if (z < z_finger) {
-                    DEBUG_LOG("ps2: detected untouch1 in disable zone...\n");
-                    if (now_ns - touchtime < maxtaptime) {
-                        DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
-                        untouchtime = now_ns;
-                        touchmode = MODE_WAIT2TAP;
-                    }
-                    else {
-                        DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                else {
-                    if (!isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT1RELEASE\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            case MODE_WAIT2TAP:
-                if (isFingerTouch(z)) {
-                    if (isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: detected touch2 in disable zone...\n");
-                        if (now_ns - untouchtime < maxdragtime) {
-                            DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
-                            touchtime = now_ns;
-                            touchmode = MODE_WAIT2RELEASE;
-                        }
-                        else {
-                            DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
-                            touchmode = MODE_NOTOUCH;
-                        }
-                    }
-                    else {
-                        DEBUG_LOG("ps2: bad input detected in MODE_WAIT2TAP x=%d, y=%d, z=%d\n", x, y, z);
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            case MODE_WAIT2RELEASE:
-                if (z < z_finger) {
-                    DEBUG_LOG("ps2: detected untouch2 in disable zone...\n");
-                    if (now_ns - touchtime < maxtaptime) {
-                        DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
-                        // enable/disable trackpad here
-                        ignoreall = !ignoreall;
-                        touchpadToggled();
-                        touchmode = MODE_NOTOUCH;
-                    }
-                    else {
-                        DEBUG_LOG("ps2: not in time, ignoring... setting MODE_NOTOUCH\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                else {
-                    if (!isInDisableZone(x, y)) {
-                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT2RELEASE\n");
-                        touchmode = MODE_NOTOUCH;
-                    }
-                }
-                break;
-            default:; // nothing...
-        }
-        if (touchmode >= MODE_WAIT1RELEASE) {
-            DEBUG_LOG("Touchmode is WAIT1RELEASE, returning\n");
-            return;
-        }
     }
 
     // if trackpad input is supposed to be ignored, then don't do anything
@@ -1016,9 +937,16 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     break;
             }
         } else {
-            if ((touchmode == MODE_DRAG || touchmode == MODE_DRAGLOCK) && (draglock || draglocktemp))
-                touchmode = MODE_DRAGNOTOUCH;
-            else {
+            if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK)
+                && (draglock || draglocktemp || (dragTimer && dragexitdelay)))
+            {
+                touchmode=MODE_DRAGNOTOUCH;
+                if (!draglock && !draglocktemp)
+                {
+                    cancelTimer(dragTimer);
+                    setTimerTimeout(dragTimer, dragexitdelay);
+                }
+            } else {
                 touchmode = MODE_NOTOUCH;
                 draglocktemp = 0;
             }
@@ -1054,7 +982,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 #endif
     int dx = 0, dy = 0;
 
-    DEBUG_LOG("touchmode=%d\n", touchmode);
+    DEBUG_LOG("ps2: touchmode=%d, buttons = %d\n", touchmode, buttons);
     switch (touchmode) {
         case MODE_DRAG:
         case MODE_DRAGLOCK:
@@ -1217,7 +1145,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
         case MODE_VSCROLL:
             if (!vsticky && (x < redge || fingers > 1 || z > zlimit)) {
-                DEBUG_LOG("Switch back to notoch. redge=%d, vsticky=%d, zlimit=%d\n", redge, vsticky, zlimit);
+                DEBUG_LOG("Switch back to notouch. redge=%d, vsticky=%d, zlimit=%d\n", redge, vsticky, zlimit);
                 touchmode = MODE_NOTOUCH;
                 break;
             }
@@ -1331,7 +1259,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
     if (touchmode == MODE_DRAGNOTOUCH && isFingerTouch(z)) {
         DEBUG_LOG("switch from dragnotouch to drag lock\n");
-        touchmode = MODE_DRAGLOCK;
+        if (dragTimer)
+            cancelTimer(dragTimer);
+        touchmode=MODE_DRAGLOCK;
     }
     ////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
     if (MODE_MTOUCH != touchmode && (fingers > 1) && isFingerTouch(z)) {
@@ -1361,13 +1291,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         DEBUG_LOG("new touchmode=%d\n", touchmode);
     }
     if ((MODE_NOTOUCH == touchmode || (MODE_HSCROLL == touchmode && y >= bedge)) &&
-            z > z_finger && x > redge && vscrolldivisor && scroll) {
-        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d\n", redge, bedge);
+            z > z_finger && x > redge && vscrolldivisor && vscroll) {
+        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d, vscrolldivisor=%d, scroll=%d\n", redge, bedge, vscrolldivisor, scroll);
         touchmode = MODE_VSCROLL;
         scrollrest = 0;
     }
     if ((MODE_NOTOUCH == touchmode || (MODE_VSCROLL == touchmode && x <= redge)) &&
-            z > z_finger && y > bedge && hscrolldivisor && hscroll && scroll) {
+            z > z_finger && y > bedge && hscrolldivisor && hscroll && vscroll) {
         DEBUG_LOG("switch to hscroll touchmode\n");
         touchmode = MODE_HSCROLL;
         scrollrest = 0;
@@ -1507,7 +1437,7 @@ int ApplePS2ALPSGlidePoint::processBitmap(unsigned int xMap, unsigned int yMap, 
                 (2 * (modelData.y_bits - 1));
     }
 
-    DEBUG_LOG("Process bitmap, fingers=%d\n", fingers);
+    DEBUG_LOG("ps2: Process bitmap, fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d, area = %d\n", fingers, *x1, *x2, *y1, *y2, abs(*x1 - *x2) * abs(*y1 - *y2));
 
     return fingers;
 }
@@ -2361,8 +2291,38 @@ error:
 }
 
 bool ApplePS2ALPSGlidePoint::hwInitDolphinV1() {
-    TPS2Request<5> request;
+    TPS2Request<16> request;
     int cmdCount = 0;
+    /*
+     		int array[]={0xE8, 0x00, 0xE7, 0xE7,  
+                         0xE7, 0xE9, 0xEC, 0xEC, 
+                         0xEC, 0xE9, 0xEA, 0xEA, 
+                         0xF3, 0x64, 0xF3, 0x28};
+     */
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE8;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0x00;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE7;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE9;
+    
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEC;
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xE9;
+    
+    request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[cmdCount++].inOrOut = 0xEA;
     
     request.commands[cmdCount].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[cmdCount++].inOrOut = kDP_SetMouseStreamMode;
