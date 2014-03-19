@@ -37,6 +37,15 @@
 #include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
+//REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
+#include <libkern/OSKextLib.h>
+void* _org_rehabman_dontstrip_[] =
+{
+    (void*)&OSKextGetCurrentIdentifier,
+    (void*)&OSKextGetCurrentLoadTag,
+    (void*)&OSKextGetCurrentVersionString,
+};
+
 // Constants for Info.plist settings
 
 #define kSleepPressTime                     "SleepPressTime"
@@ -969,13 +978,16 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
 
 IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
 {
+    ////IOReturn result = super::setParamProperties(dict);
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
+        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
+        setParamPropertiesGated(dict);
     }
     
     return super::setParamProperties(dict);
+    ////return result;
 }
 
 IOReturn ApplePS2Keyboard::setProperties(OSObject *props)
@@ -1108,8 +1120,11 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
             {
                 // mark packet with timestamp
                 clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
-                // dispatch constructed packet
-                dispatchKeyboardEventWithPacket(packet);
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet
+                    dispatchKeyboardEventWithPacket(packet);
+                }
             }
         }
     }

@@ -44,6 +44,15 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
+//REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
+#include <libkern/OSKextLib.h>
+void* _org_rehabman_dontstrip_[] =
+{
+    (void*)&OSKextGetCurrentIdentifier,
+    (void*)&OSKextGetCurrentLoadTag,
+    (void*)&OSKextGetCurrentVersionString,
+};
+
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
 //

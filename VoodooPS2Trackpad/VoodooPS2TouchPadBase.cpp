@@ -834,13 +834,16 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
 
 IOReturn VoodooPS2TouchPadBase::setParamProperties(OSDictionary* dict)
 {
+    ////IOReturn result = super::IOHIDevice::setParamProperties(dict);
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooPS2TouchPadBase::setParamPropertiesGated), dict);
+        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VooodooPS2TouchPadBase::setParamPropertiesGated), dict);
+        setParamPropertiesGated(dict);
     }
     
     return super::setParamProperties(dict);
+    ////return result;
 }
 
 IOReturn VoodooPS2TouchPadBase::setProperties(OSObject *props)
