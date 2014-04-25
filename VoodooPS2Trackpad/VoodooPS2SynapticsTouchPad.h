@@ -160,17 +160,22 @@ protected:
     // momentum scroll state
     bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
+    SimpleAverage<int, 32> dx_history;
     SimpleAverage<uint64_t, 32> time_history;
     IOTimerEventSource* scrollTimer;
     uint64_t momentumscrolltimer;
     int momentumscrollthreshy;
     uint64_t momentumscrollinterval;
-    int momentumscrollsum;
-    int64_t momentumscrollcurrent;
-    int64_t momentumscrollrest1;
+    int momentumscrollsum_y;
+    int momentumscrollsum_x;
+    int64_t momentumscrollcurrent_x;
+    int64_t momentumscrollcurrent_y;
+    int64_t momentumscrollrest1_y;
+    int64_t momentumscrollrest1_x;
     int momentumscrollmultiplier;
     int momentumscrolldivisor;
-    int momentumscrollrest2;
+    int momentumscrollrest2_x;
+    int momentumscrollrest2_y;
     int momentumscrollsamplesmin;
     
     // timer for drag delay
@@ -250,6 +255,9 @@ protected:
     
     virtual bool deviceSpecificInit();
     
+    virtual void afterInstallInterrupt();
+    virtual void afterDeviceUnlock();
+
     virtual void initTouchPad();
 
     virtual void touchpadToggled();

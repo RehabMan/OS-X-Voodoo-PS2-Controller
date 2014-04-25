@@ -41,8 +41,15 @@ enum {
 #define ALPS_REG_BASE_RUSHMORE  0xc2c0
 #define ALPS_REG_BASE_PINNACLE  0x0000
 
-static const struct alps_nibble_commands alps_v3_nibble_commands[] = {
-    { kDP_MouseSetPoll,                 0x00 }, /* 0 no send/recv */
+/*
+ * All these commands are 1 byte. The Linux driver uses 2 bytes for
+ * each command where nibble 3 (0x0f00) is used to determine the
+ * amount of data to receive and nibble 4 (0xf000) is used to
+ * determine the amount of data to send after the initial command.
+ *
+ */
+static const struct alps_nibble_commands alps_v3_nibble_commands[] = { {
+kDP_MouseSetPoll, 0x00 }, /* 0 no send/recv */
     { kDP_SetDefaults,                  0x00 }, /* 1 no send/recv */
     { kDP_SetMouseScaling2To1,          0x00 }, /* 2 no send/recv */
     { kDP_SetMouseSampleRate | 0x1000,  0x0a }, /* 3 send=1 recv=0 */
@@ -60,8 +67,8 @@ static const struct alps_nibble_commands alps_v3_nibble_commands[] = {
     { kDP_SetMouseScaling1To1,          0x00 }, /* f no send/recv */
 };
 
-static const struct alps_nibble_commands alps_v4_nibble_commands[] = {
-    { kDP_Enable,                       0x00 }, /* 0 no send/recv */
+static const struct alps_nibble_commands alps_v4_nibble_commands[] = { {
+kDP_Enable, 0x00 }, /* 0 no send/recv */
     { kDP_SetDefaults,                  0x00 }, /* 1 no send/recv */
     { kDP_SetMouseScaling2To1,          0x00 }, /* 2 no send/recv */
     { kDP_SetMouseSampleRate | 0x1000,  0x0a }, /* 3 send=1 recv=0 */
@@ -79,6 +86,44 @@ static const struct alps_nibble_commands alps_v4_nibble_commands[] = {
     { kDP_SetMouseScaling1To1,          0x00 }, /* f no send/recv */
 };
 
+#define PSMOUSE_CMD_SETSCALE11	0x00e6
+#define PSMOUSE_CMD_SETSCALE21	0x00e7
+#define PSMOUSE_CMD_SETRES	0x10e8
+#define PSMOUSE_CMD_GETINFO	0x03e9
+#define PSMOUSE_CMD_SETSTREAM	0x00ea
+#define PSMOUSE_CMD_SETPOLL	0x00f0
+#define PSMOUSE_CMD_POLL	0x00eb	/* caller sets number of bytes to receive */
+#define PSMOUSE_CMD_RESET_WRAP	0x00ec
+#define PSMOUSE_CMD_GETID	0x02f2
+#define PSMOUSE_CMD_SETRATE	0x10f3
+#define PSMOUSE_CMD_ENABLE	0x00f4
+#define PSMOUSE_CMD_DISABLE	0x00f5
+#define PSMOUSE_CMD_RESET_DIS	0x00f6
+#define PSMOUSE_CMD_RESET_BAT	0x02ff
+
+#define PSMOUSE_RET_BAT		0xaa
+#define PSMOUSE_RET_ID		0x00
+#define PSMOUSE_RET_ACK		0xfa
+#define PSMOUSE_RET_NAK		0xfe
+
+static const struct alps_nibble_commands alps_v6_nibble_commands[] = { {
+PSMOUSE_CMD_ENABLE, 0x00 }, /* 0 */
+{ PSMOUSE_CMD_SETRATE, 0x0a }, /* 1 */
+{ PSMOUSE_CMD_SETRATE, 0x14 }, /* 2 */
+{ PSMOUSE_CMD_SETRATE, 0x28 }, /* 3 */
+{ PSMOUSE_CMD_SETRATE, 0x3c }, /* 4 */
+{ PSMOUSE_CMD_SETRATE, 0x50 }, /* 5 */
+{ PSMOUSE_CMD_SETRATE, 0x64 }, /* 6 */
+{ PSMOUSE_CMD_SETRATE, 0xc8 }, /* 7 */
+{ PSMOUSE_CMD_GETID, 0x00 }, /* 8 */
+{ PSMOUSE_CMD_GETINFO, 0x00 }, /* 9 */
+{ PSMOUSE_CMD_SETRES, 0x00 }, /* a */
+{ PSMOUSE_CMD_SETRES, 0x01 }, /* b */
+{ PSMOUSE_CMD_SETRES, 0x02 }, /* c */
+{ PSMOUSE_CMD_SETRES, 0x03 }, /* d */
+{ PSMOUSE_CMD_SETSCALE21, 0x00 }, /* e */
+{ PSMOUSE_CMD_SETSCALE11, 0x00 }, /* f */
+};
 
 #define ALPS_DUALPOINT          0x02    /* touchpad has trackstick */
 #define ALPS_PASS               0x04    /* device has a pass-through port */
@@ -90,16 +135,16 @@ static const struct alps_nibble_commands alps_v4_nibble_commands[] = {
 #define ALPS_PS2_INTERLEAVED    0x80    /* 3-byte PS/2 packet interleaved with
 6-byte ALPS packet */
 
-static const struct alps_model_info alps_model_data[] = {
-    { { 0x32, 0x02, 0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT },  
-        /* Toshiba Salellite Pro M10 */
+static const struct alps_model_info alps_model_data[] = { {
+		{ 0x32, 0x02, 0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_PASS
+				| ALPS_DUALPOINT }, /* Toshiba Salellite Pro M10 */
     { { 0x33, 0x02, 0x0a }, 0x00, ALPS_PROTO_V1, 0x88, 0xf8, 0 },               /* UMAX-530T */
-    { { 0x53, 0x02, 0x0a }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-    { { 0x53, 0x02, 0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-    { { 0x60, 0x03, 0xc8 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },               /* HP ze1115 */
-    { { 0x63, 0x02, 0x0a }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-    { { 0x63, 0x02, 0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
-    { { 0x63, 0x02, 0x28 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_FW_BK_2 },    /* Fujitsu Siemens S6010 */
+{ { 0x53, 0x02, 0x0a }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 }, { { 0x53, 0x02,
+		0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 }, { { 0x60, 0x03, 0xc8 },
+		0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 }, /* HP ze1115 */
+{ { 0x63, 0x02, 0x0a }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 }, { { 0x63, 0x02,
+		0x14 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 }, { { 0x63, 0x02, 0x28 },
+		0x00, ALPS_PROTO_V2, 0xf8, 0xf8, ALPS_FW_BK_2 }, /* Fujitsu Siemens S6010 */
     { { 0x63, 0x02, 0x3c }, 0x00, ALPS_PROTO_V2, 0x8f, 0x8f, ALPS_WHEEL },      /* Toshiba Satellite S2400-103 */
     { { 0x63, 0x02, 0x50 }, 0x00, ALPS_PROTO_V2, 0xef, 0xef, ALPS_FW_BK_1 },    /* NEC Versa L320 */
     { { 0x63, 0x02, 0x64 }, 0x00, ALPS_PROTO_V2, 0xf8, 0xf8, 0 },
@@ -121,8 +166,19 @@ static const struct alps_model_info alps_model_data[] = {
     { { 0x52, 0x01, 0x14 }, 0x00, ALPS_PROTO_V2, 0xff, 0xff,
         ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },                
         /* Toshiba Tecra A11-11L */
-    { { 0x73, 0x02, 0x64 }, 0x8a, ALPS_PROTO_V4, 0x8f, 0x8f, 0 },
-};
+{ { 0x52, 0x01, 0x14 }, 0x00, ALPS_PROTO_V2, 0xff, 0xff,
+ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED }, { { 0x73, 0x02, 0x64 },
+		0x9b, ALPS_PROTO_V3, 0x8f, 0x8f,
+		ALPS_DUALPOINT }, { { 0x73, 0x02, 0x64 }, 0x9d,
+ALPS_PROTO_V3, 0x8f, 0x8f, ALPS_DUALPOINT }, { { 0x73, 0x02, 0x64 }, 0x8a,
+ALPS_PROTO_V4, 0x8f, 0x8f, 0 },
+/* Dell Latitude E6230 (no trackstick), E6430, E6530 */
+{ { 0x73, 0x03, 0x0a }, 0x1d, ALPS_PROTO_V5, 0x8f, 0x8f,
+ALPS_DUALPOINT },
+/* Dell Inspiron N5110 */
+{ { 0x73, 0x03, 0x50 }, 0x0d, ALPS_PROTO_V6, 0xc8, 0xc8, 0 },
+/* Dell Inspiron 17R 7720 */
+{ { 0x73, 0x03, 0x50 }, 0x02, ALPS_PROTO_V6, 0xc8, 0xc8, 0 }, };
 
 // =============================================================================
 // ApplePS2ALPSGlidePoint Class Implementation
@@ -168,6 +224,74 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2ALPSGlidePoint::setCommandByte(UInt8 setBits, UInt8 clearBits) {
+	//
+	// Sets the bits setBits and clears the bits clearBits "atomically" in the
+	// controller's Command Byte.   Since the controller does not provide such
+	// a read-modify-write primitive, we resort to a test-and-set try loop.
+	//
+	// Do NOT issue this request from the interrupt/completion context.
+	//
+
+	UInt8 commandByte;
+	UInt8 commandByteNew;
+	PS2Request * request = _device->allocateRequest();
+
+	if (!request)
+		return;
+
+	do {
+		// (read command byte)
+		request->commands[0].command = kPS2C_WriteCommandPort;
+		request->commands[0].inOrOut = kCP_GetCommandByte;
+		request->commands[1].command = kPS2C_ReadDataPort;
+		request->commands[1].inOrOut = 0;
+		request->commandsCount = 2;
+		_device->submitRequestAndBlock( request );
+
+		//
+		// Modify the command byte as requested by caller.
+		//
+
+		commandByte = request->commands[1].inOrOut;
+		commandByteNew = ( commandByte | setBits ) & ( ~clearBits );
+
+		// ("test-and-set" command byte)
+		request->commands[0].command = kPS2C_WriteCommandPort;
+		request->commands[0].inOrOut = kCP_GetCommandByte;
+		request->commands[1].command = kPS2C_ReadDataPortAndCompare;
+		request->commands[1].inOrOut = commandByte;
+		request->commands[2].command = kPS2C_WriteCommandPort;
+		request->commands[2].inOrOut = kCP_SetCommandByte;
+		request->commands[3].command = kPS2C_WriteDataPort;
+		request->commands[3].inOrOut = commandByteNew;
+		request->commandsCount = 4;
+		_device->submitRequestAndBlock( request );
+
+		//
+		// Repeat this loop if last command failed, that is, if the
+		// old command byte was modified since we first read it.
+		//
+
+	} while (request->commandsCount != 4);
+
+	_device->freeRequest( request );
+}
+
+void ApplePS2ALPSGlidePoint::afterInstallInterrupt() {
+
+	DEBUG_LOG( "afterInterruptInstall  - AlpsGlidepoint\n" );
+
+	enterCommandMode();
+	setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
+	exitCommandMode();
+		setTouchPadEnable( true );
+}
+void ApplePS2ALPSGlidePoint::afterDeviceUnlock() {
+	DEBUG_LOG( " afterDeviceUnlock  - AlpsGlidepoint\n" );
+
+}
+
 bool ApplePS2ALPSGlidePoint::deviceSpecificInit() {
     
     resetMouse();
@@ -179,7 +303,8 @@ bool ApplePS2ALPSGlidePoint::deviceSpecificInit() {
     // Setup expected packet size
     modelData.pktsize = modelData.proto_version == ALPS_PROTO_V4 ? 8 : 6;
 
-    IOLog("Initializing TouchPad hardware...this may take a second.\n");
+	IOLog("Initializing TouchPad hardware...this may take a second - version : %d.\n",
+			modelData.proto_version );
 
     if (!(this->*hw_init)()) {
         goto init_fail;
@@ -201,7 +326,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     }
 
     // Set defaults for this mouse model
-    z_finger = 15;
+	z_finger = 8;
     zlimit = 255;
     ledge = 0;
     setupMaxes();
@@ -215,8 +340,8 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     vscrolldivisor = 50;
     _buttonCount = 3;
     
-    scrolldxthresh = 15;
-    scrolldythresh = 15;
+	scrolldxthresh = 0;
+	scrolldythresh = 0;
 
     dragexitdelay = 600000000;
     dragTimer = 0;
@@ -309,6 +434,10 @@ void ApplePS2ALPSGlidePoint::packetReady() {
     while (_ringBuffer.count() >= modelData.pktsize) {
         UInt8 *packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
+		DEBUG_LOG( "ps2: packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n",
+				packet[0], packet[1], packet[2], packet[3], packet[4],
+				packet[5] );
+
         if ((packet[0] & modelData.mask0) == modelData.byte0) {
             DEBUG_LOG("ps2: Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             (this->*process_packet)(packet);
@@ -692,6 +821,134 @@ void ApplePS2ALPSGlidePoint::decodeDolphin(struct alps_fields *f, UInt8 *p) {
     decodeButtonsV3(f, p);
 }
 
+//For single-touch, the 6-byte packet format is:
+
+// byte 0:    1    1    0    0    1    0    0    0
+// byte 1:    0   x6   x5   x4   x3   x2   x1   x0
+// byte 2:    0   y6   y5   y4   y3   y2   y1   y0
+// byte 3:    0    M    R    L    1    m    r    l
+// byte 4:   y10  y9   y8   y7  x10   x9   x8   x7
+// byte 5:    0   z6   z5   z4   z3   z2   z1   z0
+//
+//For mt, the format is:
+//
+// byte 0:    1    1    1    n3   1   n2   n1   x24
+// byte 1:    1   y7   y6    y5  y4   y3   y2    y1
+// byte 2:    ?   x2   x1   y12 y11  y10   y9    y8
+// byte 3:    0  x23  x22   x21 x20  x19  x18   x17
+// byte 4:    0   x9   x8    x7  x6   x5   x4    x3
+// byte 5:    0  x16  x15   x14 x13  x12  x11   x10
+
+void ApplePS2ALPSGlidePoint::processPacketV6(UInt8 *packet) {
+	//single touch byte 0:    1    1    0    0    1    0    0    0
+	if ( packet[0] == 0xc8 ) {
+		processPacketV6SingleTouch( packet );
+	} else if ((packet[0] & 0xC8) == 0xC8) {
+		processPacketV6MultiTouch( packet );
+	}else {
+        DEBUG_LOG("alps mt : filter packet !!!!\n");
+    }
+
+}
+
+void ApplePS2ALPSGlidePoint::processPacketV6SingleTouch(UInt8 *packet) {
+	int x, y, z, left, right, middle;
+	uint64_t now_abs;
+	UInt32 buttons = 0, raw_buttons = 0;
+
+	//calculate x,y,z
+
+	x = ( SInt16 )( ( ( packet[4] & 0x0f ) << 7 ) | ( packet[1] & 0x7f ) );
+	y = ( SInt16 )( ( ( packet[4] & 0xf0 ) << 3 ) | ( packet[2] & 0x7f ) );
+	z = ( SInt16 )( packet[5] & 0x7f );
+
+	clock_get_uptime( &now_abs );
+	//calculate buttons
+
+	left = packet[3] & 0x01;
+	right = packet[3] & 0x02;
+	middle = packet[3] & 0x04;
+
+	raw_buttons |= left ? 0x01 : 0;
+	raw_buttons |= right ? 0x02 : 0;
+	raw_buttons |= middle ? 0x04 : 0;
+
+	// Sometimes, a big value can spit out, so we must remove it...
+	//    if ((abs(x) >= 0x7f) && (abs(y) >= 0x7f)) {
+	//        x = y = 0;
+	//    }
+	// Button status can appear in normal packet...
+	if (0 == raw_buttons) {
+		buttons = lastbuttons;
+	} else {
+		buttons = raw_buttons;
+		lastbuttons = buttons;
+	}
+
+	dispatchEventsWithInfo( x, y, z, 1, raw_buttons );
+
+}
+
+void ApplePS2ALPSGlidePoint::processPacketV6MultiTouch(UInt8 *packet) {
+	UInt64 x_map, y_map;
+	SInt32 x1, y1, x2, y2,x,y,z;
+	int  left, right, middle;
+	UInt32 buttons = 0, raw_buttons = 0;
+
+	//SInt32 z = 15;
+	UInt32 x_bitmap, y_bitmap;
+	int nrOfFingers, fingersFromBitMap;
+
+	DEBUG_LOG( "ProcessPacket v6 - multi-touch Packet" );
+
+	modelData.multi_packet = ( packet[0] & 0x20 ) == 0x20;
+
+	// one packet with 0x20 , second packet match to 0x02;
+
+	if (modelData.multi_packet) {
+		nrOfFingers = ( ( ( packet[0] & 0x10 ) >> 1 ) | ( packet[0] & 0x06 ) );
+        nrOfFingers = nrOfFingers/2;
+		x_map = ( ( packet[2] & 0x60 ) >> 5 ) | ( ( packet[4] & 0x7f ) << 2 )
+				| ( ( packet[5] & 0x7f ) << 9 ) | ( ( packet[3] & 0x07 ) << 16 )
+				| ( ( packet[3] & 0x70 ) << 15 )
+				| ( ( packet[0] & 0x01 ) << 22 );
+		y_map = ( packet[1] & 0x7f ) | ( ( packet[2] & 0x1f ) << 7 );
+		DEBUG_LOG( "alps mt :  trackpad : number of fingers :%d\n ",
+				nrOfFingers );
+		fingersFromBitMap = processBitmap( x_map, y_map, &x1, &y1, &x2, &y2 );
+		modelData.fingers = nrOfFingers;
+		modelData.x1 = x1;
+		modelData.x2 = x2;
+		modelData.y1 = y1;
+		modelData.y2 = y2;
+		return;
+	}
+
+	x = ( SInt16 )( ( ( packet[4] & 0x0f ) << 7 ) | ( packet[1] & 0x7f ) );
+	y = ( SInt16 )( ( ( packet[4] & 0xf0 ) << 3 ) | ( packet[2] & 0x7f ) );
+	z = ( SInt16 )( packet[5] & 0x7f );
+
+	left = packet[3] & 0x10;
+	right = packet[3] & 0x20;
+    middle = packet[3] & 0x40;
+
+	raw_buttons |= left ? 0x01 : 0;
+	raw_buttons |= right ? 0x02 : 0;
+	raw_buttons |= middle ? 0x04 : 0;
+
+	DEBUG_LOG( "alps mt :  2ndpacket :x=%d,y=%d,z=%d ,buttons = %d\n ", x,y,z,buttons );
+
+//	if (0 == raw_buttons) {
+//		buttons = lastbuttons;
+//	} else {
+//		buttons = raw_buttons;
+//		lastbuttons = buttons;
+//	}
+
+	dispatchEventsWithInfo( x, y, z, modelData.fingers, raw_buttons );
+
+}
+
 void ApplePS2ALPSGlidePoint::processPacketV4(UInt8 *packet) {
     SInt32 offset;
     SInt32 x, y, z;
@@ -875,28 +1132,43 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         untouchtime = now_ns;
         tracksecondary = false;
 
-        if (dy_history.count()) {
-            DEBUG_LOG("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest() - time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
-        }
-        else {
+		if (dy_history.count() || dx_history.count()) {
+			DEBUG_LOG(
+					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
+					time_history.newest(), time_history.oldest(),
+					time_history.newest() - time_history.oldest(),
+					dy_history.sum(), dy_history.count(),
+					dy_history.average(),
+					dx_history.sum(), dx_history.count(),
+					dx_history.average()
+			);
+		} else {
             DEBUG_LOG("ps2: no time/dy history\n");
         }
 
         // check for scroll momentum start
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
             // releasing when we were in touchmode -- check for momentum scroll
-            if (dy_history.count() > momentumscrollsamplesmin &&
-                    (momentumscrollinterval = time_history.newest() - time_history.oldest())) {
-                momentumscrollsum = dy_history.sum();
-                momentumscrollcurrent = momentumscrolltimer * -momentumscrollsum;
-                momentumscrollrest1 = 0;
-                momentumscrollrest2 = 0;
+			if ((dy_history.count() > momentumscrollsamplesmin || dx_history.count()> momentumscrollsamplesmin  )
+					&& ( momentumscrollinterval = time_history.newest()
+							- time_history.oldest() )) {
+				momentumscrollsum_y = dy_history.sum();
+				momentumscrollsum_x = dx_history.sum();
+				momentumscrollcurrent_y = momentumscrolltimer * -momentumscrollsum_y;
+				momentumscrollcurrent_x = momentumscrolltimer * -momentumscrollsum_x;
+				momentumscrollrest1_x = 0;
+				momentumscrollrest1_y = 0;
+				momentumscrollrest2_x = 0;
+				momentumscrollrest2_y = 0;
                 setTimerTimeout(scrollTimer, momentumscrolltimer);
             }
         }
         time_history.reset();
         dy_history.reset();
-        DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s). touchmode=%d\n", (uint64_t) (now_ns - touchtime) / 1000, now_ns - touchtime < maxtaptime ? "true" : "false", touchmode);
+		dx_history.reset();
+		DEBUG_LOG( "ps2: now_ns-touchtime=%lld (%s). touchmode=%d\n",
+				(uint64_t) (now_ns - touchtime) / 1000,
+				now_ns - touchtime < maxtaptime ? "true" : "false", touchmode );
         if (now_ns - touchtime < maxtaptime && clicking) {
             switch (touchmode) {
                 case MODE_DRAG:
@@ -1015,36 +1287,39 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     }
                     calculateMovement(x, y, z, fingers, dx, dy);
                     // check for stopping or changing direction
-                    if ((dy < 0) != (dy_history.newest() < 0) || dy == 0) {
+					if ((( dy < 0 ) != ( dy_history.newest() < 0 ) || dy == 0) ||
+					(( dx < 0 ) != ( dx_history.newest() < 0 ) || dx == 0)) {
                         // stopped or changed direction, clear history
                         dy_history.reset();
+						dx_history.reset();
                         time_history.reset();
                     }
                     // put movement and time in history for later
                     dy_history.filter(dy);
+					dx_history.filter( dx );
                     time_history.filter(now_ns);
                     if (0 != dy || 0 != dx) {
-                        if (!hscroll) {
-                            dx = 0;
-                        }
+//						if (!hscroll) {
+//							dx = 0;
+//						}
                         // reverse dy to get correct movement
                         dy = yrest - dy;
                         dx = xrest - dx;
-                        if (abs(dx) < scrolldxthresh)
-                        {
+						if (abs(dx) < scrolldxthresh) {
                             xrest = dx;
                             dx = 0;
                         } else {
                             xrest = 0;
                         }
-                        if (abs(dy) < scrolldythresh)
-                        {
+						if (abs(dy) < scrolldythresh) {
                             yrest = dy;
                             dy = 0;
                         } else {
                             yrest = 0;
                         }
-                        DEBUG_LOG("%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n", getName(), dy, dx);
+						DEBUG_LOG(
+								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
+								getName(), dy, dx );
                         dispatchScrollWheelEventX(dy, dx, 0, now_abs);
                         dx = dy = 0;
                     }
@@ -1155,15 +1430,14 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
             dy = ((lasty - y) / (vscrolldivisor / 100.0));
             dy = yrest + dy;
-            if (abs(dy) < scrolldythresh)
-            {
+			if (abs(dy) < scrolldythresh) {
                 yrest = dy;
                 dy = 0;
             } else {
                 yrest = 0;
             }
             DEBUG_LOG("VScroll: dy=%d\n", dy);
-            dispatchScrollWheelEventX(dy, 0, 0, now_abs);
+			dispatchScrollWheelEventX( dy, dx, 0, now_abs );
             dy = 0;
             break;
 
@@ -1179,15 +1453,14 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
             dx = ((lastx - x) / (hscrolldivisor / 100.0));
             dx = xrest + dx;
-            if (abs(dx) < scrolldxthresh)
-            {
+			if (abs(dx) < scrolldxthresh) {
                 xrest = dx;
                 dx = 0;
             } else {
                 xrest = 0;
             }
             DEBUG_LOG("HScroll: dx=%d\n", dx);
-            dispatchScrollWheelEventX(0, dx, 0, now_abs);
+			dispatchScrollWheelEventX( dy, dx, 0, now_abs );
             dx = 0;
             break;
 
@@ -1198,15 +1471,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             
             if (y < centery) {
                 dx = x - lastx;
-            }
-            else {
+			} else {
                 dx = lastx - x;
             }
             
             if (x < centerx) {
                 dx += lasty - y;
-            }
-            else {
+			} else {
                 dx += y - lasty;
             }
             DEBUG_LOG("CScroll: %d\n", (dx + scrollrest) / cscrolldivisor);
@@ -1234,7 +1505,8 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     if (isFingerTouch(z)) {
         DEBUG_LOG("isFingerTouch\n");
         // taps don't count if too close to typing or if currently in momentum scroll
-        if ((!palm_wt || now_ns - keytime >= maxaftertyping) && !momentumscrollcurrent) {
+		if (( !palm_wt || now_ns - keytime >= maxaftertyping )
+				&& (!momentumscrollcurrent_y||!momentumscrollcurrent_x)) {
             if (!isTouchMode()) {
                 DEBUG_LOG("Set touchtime to now=%llu, x=%d, y=%d, fingers=%d\n", now_ns, x, y, fingers);
                 touchtime = now_ns;
@@ -1248,7 +1520,8 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
         }
         // any touch cancels momentum scroll
-        momentumscrollcurrent = 0;
+		momentumscrollcurrent_x = 0;
+		momentumscrollcurrent_y = 0;
     }
 
     // switch modes, depending on input
@@ -1331,9 +1604,9 @@ void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers,
 //        yrest = dy % divisory;
         // This was in the original version but not sure why...seems OK if
         // the user is moving fast, at least on the ALPS hardware here
-        if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh) {
-            dx = dy = xrest = yrest = 0;
-        }
+		//        if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh) {
+		//            dx = dy = xrest = yrest = 0;
+		//        }
     }
 }
 
@@ -1482,9 +1755,42 @@ dispatchRelativePointerEventWithPacket(UInt8 *packet,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void ApplePS2ALPSGlidePoint::setTouchPadV6Enable(bool enable) {
+	DEBUG_LOG( "setTouchpadEnableV6 enter,%d\n", enable );
+	//
+	// Instructs the trackpad to start or stop the reporting of data packets.
+	// It is safe to issue this request from the interrupt/completion context.
+	//
+
+	PS2Request * request = _device->allocateRequest();
+	if (!request)
+		return;
+
+	// (mouse enable/disable command)
+	request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[0].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[1].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[2].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[3].inOrOut = kDP_SetDefaultsAndDisable;
+
+	// (mouse or pad enable/disable command)
+	request->commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[4].inOrOut =
+			( enable ) ? kDP_Enable : kDP_SetDefaultsAndDisable;
+	request->commandsCount = 5;
+	_device->submitRequest( request ); // asynchronous, auto-free'd
+}
 
 void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
     DEBUG_LOG("setTouchpadEnable enter\n");
+
+	if (modelData.proto_version==ALPS_PROTO_V6){
+			setTouchPadV6Enable( enable );
+			return;
+	}
     //
     // Instructs the trackpad to start or stop the reporting of data packets.
     // It is safe to issue this request from the interrupt/completion context.
@@ -1512,37 +1818,71 @@ bool ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {
  * we don't fiddle with it.
  */
 bool ApplePS2ALPSGlidePoint::tapMode(bool enable) {
-    int cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution;
-    UInt8 tapArg = enable ? 0x0A : 0x00;
-    TPS2Request<8> request;
-    ALPSStatus_t result;
+	//
+	// Instructs the trackpad to honor or ignore tapping
+	//
+	ALPSStatus_t Status;
+	bool success;
     
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_GetMouseInformation;
-    request.commands[1].command = kPS2C_ReadDataPort;
-    request.commands[1].inOrOut = 0;
-    request.commands[2].command = kPS2C_ReadDataPort;
-    request.commands[2].inOrOut = 0;
-    request.commands[3].command = kPS2C_ReadDataPort;
-    request.commands[3].inOrOut = 0;
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[6].inOrOut = cmd;
-    request.commands[7].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[7].inOrOut = tapArg;
-    request.commandsCount = 8;
-    _device->submitRequestAndBlock(&request);
-    
-    if (request.commandsCount != 8) {
-        DEBUG_LOG("Enabling tap mode failed before getStatus call, command count=%d\n",
-                  request.commandsCount);
+	PS2Request * request = _device->allocateRequest();
+	if (!request)
         return false;
+
+	request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[0].inOrOut = kDP_SetMouseScaling2To1;
+	request->commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[1].inOrOut = kDP_SetMouseScaling2To1;
+	request->commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[2].inOrOut = kDP_SetMouseScaling2To1;
+	request->commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[3].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[4].inOrOut = kDP_GetMouseInformation;
+	request->commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[5].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[6].inOrOut = kDP_SetDefaultsAndDisable;
+
+	getStatus( &Status );
+	if (Status.bytes[0] & 0x04) {
+		DEBUG_LOG( "Tapping can only be toggled.\n" );
+		enable = false;
     }
     
-    return getStatus(&result);
+	if (enable) {
+		request->commands[7].command = kPS2C_SendMouseCommandAndCompareAck;
+		request->commands[7].inOrOut = kDP_SetMouseSampleRate;
+		request->commands[8].command = kPS2C_SendMouseCommandAndCompareAck;
+		request->commands[8].inOrOut = 0x0A;
+	} else {
+		request->commands[7].command = kPS2C_SendMouseCommandAndCompareAck;
+		request->commands[7].inOrOut = kDP_SetMouseResolution;
+		request->commands[8].command = kPS2C_SendMouseCommandAndCompareAck;
+		request->commands[8].inOrOut = 0x00;
+}
+
+	request->commands[9].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[9].inOrOut = kDP_SetMouseScaling1To1;
+	request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[10].inOrOut = kDP_SetMouseScaling1To1;
+	request->commands[11].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[11].inOrOut = kDP_SetMouseScaling1To1;
+	request->commands[12].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[12].inOrOut = kDP_SetDefaultsAndDisable;
+	request->commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[13].inOrOut = kDP_Enable;
+	request->commandsCount = 14;
+	_device->submitRequestAndBlock( request );
+
+	getStatus( &Status );
+
+	success = ( request->commandsCount == 14 );
+	if (success) {
+		setSampleRateAndResolution( 0x64, 0x03 );
+	}
+
+	_device->freeRequest( request );
+	return true;
 }
 
 bool ApplePS2ALPSGlidePoint::enterCommandMode() {
@@ -1939,7 +2279,7 @@ bool ApplePS2ALPSGlidePoint::passthroughModeV2(bool enable) {
     //ps2_drain(ps2dev, 3, 100);
     
     return request.commandsCount == 4;
-};
+}
 
 bool ApplePS2ALPSGlidePoint::absoluteModeV3() {
 
@@ -2345,6 +2685,80 @@ bool ApplePS2ALPSGlidePoint::hwInitDolphinV1() {
     return true;
 }
 
+bool ApplePS2ALPSGlidePoint::setAbsoluteModeNew() {
+	PS2Request * request = _device->allocateRequest();
+	if (!request)
+		return false;
+
+	// Try ALPS magic knock - 4 disable before enable
+	request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[0].inOrOut = kDP_SetDefaultsAndDisable;           //F5
+	request->commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[1].inOrOut = kDP_SetDefaultsAndDisable;           //F5
+	request->commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[2].inOrOut = kDP_SetDefaultsAndDisable;           //F5
+	request->commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[3].inOrOut = kDP_SetDefaultsAndDisable;           //F5
+	request->commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[4].inOrOut = kDP_Enable;                          //F4
+
+	// Switch mouse to poll (remote) mode so motion data will not get in our way
+
+	request->commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+	request->commands[5].inOrOut = kDP_SetMousePoll;                    //F0
+	request->commandsCount = 6;
+	_device->submitRequestAndBlock( request );
+	_device->freeRequest( request );
+	return true;
+}
+
+bool ApplePS2ALPSGlidePoint::absoluteModeV6() {
+	PS2Request * request = _device->allocateRequest();
+	if (!request)
+		return false;
+	//           |---------------E7---------------|  |---------EC---------|  |EC|  |---------set abs----------|
+	int array[] = { 0xE8, 0x00, 0xE7, 0xE7, 0xE7, 0xE9, 0xEC, 0xEC, 0xEC, 0xE9,
+			0xEA, 0xEA, 0xF3, 0x64, 0xF3, 0x28 };
+	request->commandsCount = 16;
+	for (int i = 0; i < request->commandsCount; i++) {
+		request->commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+		request->commands[i].inOrOut = array[i];
+	}
+	_device->submitRequestAndBlock( request );
+	_device->freeRequest( request );
+	return true;
+}
+ALPSStatus_t ApplePS2ALPSGlidePoint::getE6Report() {
+	ALPSStatus_t e6;
+	repeatCmd( NULL, NULL, kDP_SetMouseScaling1To1, &e6 );
+	return e6;
+}
+
+ALPSStatus_t ApplePS2ALPSGlidePoint::getE7Report() {
+	ALPSStatus_t e7;
+	repeatCmd( NULL, NULL, kDP_SetMouseScaling2To1, &e7 );
+	return e7;
+}
+ALPSStatus_t ApplePS2ALPSGlidePoint::getECReport() {
+	ALPSStatus_t ec;
+	repeatCmd( NULL, NULL, kDP_MouseResetWrap, &ec );
+	return ec;
+}
+bool ApplePS2ALPSGlidePoint::hwInitV6_version2() {
+	//0xc8,0x14;
+	ALPSStatus_t result;
+
+	repeatCmd( NULL, NULL, kDP_SetMouseScaling1To1, &result );
+	repeatCmd( NULL, NULL, kDP_SetMouseScaling1To1, &result );
+	repeatCmd( NULL, NULL, kDP_SetMouseScaling1To1, &result );
+	repeatCmd( kDP_SetMouseSampleRate, 0xc8, kDP_SetMouseSampleRate, &result );
+	repeatCmd( kDP_SetMouseSampleRate, 0x14, kDP_SetMouseSampleRate, &result );
+
+	absoluteModeV6();
+
+	return true;
+}
+
 void ApplePS2ALPSGlidePoint::setDefaults() {
     modelData.byte0 = 0x8f;
     modelData.mask0 = 0x8f;
@@ -2397,6 +2811,20 @@ void ApplePS2ALPSGlidePoint::setDefaults() {
             modelData.x_bits = 23;
             modelData.y_bits = 12;
             break;
+		case ALPS_PROTO_V6:
+			hw_init = &ApplePS2ALPSGlidePoint::hwInitV6_version2;
+			process_packet = &ApplePS2ALPSGlidePoint::processPacketV6;
+			modelData.nibble_commands = alps_v6_nibble_commands;
+			modelData.addr_command = kDP_MouseResetWrap;
+			modelData.byte0 = 0xc8;
+			modelData.mask0 = 0xc8;
+			modelData.flags = 0;
+			modelData.x_max = 1360;
+			modelData.y_max = 660;
+			modelData.x_bits = 23;
+			modelData.y_bits = 12;
+			//decode_fields = &ApplePS2ALPSGlidePoint::decodePacketV6;
+			break;
     }
 
     setupMaxes();

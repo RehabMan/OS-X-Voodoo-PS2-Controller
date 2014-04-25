@@ -114,7 +114,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = swipedy = 800;
+    swipedx = 700;
+    swipedy = 600;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
     _buttonCount = 2;
@@ -126,8 +127,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     bogusdxthresh = 400;
     bogusdythresh = 350;
     
-    scrolldxthresh = 10;
-    scrolldythresh = 10;
+    scrolldxthresh = 0;
+    scrolldythresh = 0;
     
     immediateclick = true;
 
@@ -188,7 +189,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
     momentumscrollsamplesmin = 3;
-    momentumscrollcurrent = 0;
+    momentumscrollcurrent_y = 0;
+    momentumscrollcurrent_x = 0;
     
     dragexitdelay = 100000000;
     dragTimer = 0;
@@ -305,14 +307,21 @@ bool VoodooPS2TouchPadBase::start( IOService * provider )
     // Install our driver's interrupt handler, for asynchronous data delivery.
     //
     
+    DEBUG_LOG("touchpadbase : i will install interrupt");
+
     _device->installInterruptAction(this,
                                     OSMemberFunctionCast(PS2InterruptAction,this,&VoodooPS2TouchPadBase::interruptOccurred),
                                     OSMemberFunctionCast(PS2PacketAction, this, &VoodooPS2TouchPadBase::packetReady));
     _interruptHandlerInstalled = true;
     
+        DEBUG_LOG("touchpadbase : call to afterInstall Interrupt");
+
+    afterInstallInterrupt();
+
     // now safe to allow other threads
     _device->unlock();
     
+    afterDeviceUnlock();
     //
 	// Install our power control handler.
 	//
@@ -417,24 +426,30 @@ void VoodooPS2TouchPadBase::onScrollTimer(void)
     // momentum scroll.
     //
     
-    if (!momentumscrollcurrent)
+    if (!momentumscrollcurrent_y && !momentumscrollcurrent_x)
         return;
     
     uint64_t now_abs;
 	clock_get_uptime(&now_abs);
     
-    int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval + momentumscrollrest2;
+    int64_t dy64 = momentumscrollcurrent_y / (int64_t)momentumscrollinterval + momentumscrollrest2_y;
+    int64_t dx64 = momentumscrollcurrent_x / (int64_t)momentumscrollinterval + momentumscrollrest2_x;
+    int dx = (int) dx64;
     int dy = (int)dy64;
-    if (abs(dy) > momentumscrollthreshy)
+    if (abs(dy) > momentumscrollthreshy || abs(dx) > momentumscrollthreshy)
     {
         // dispatch the scroll event
-        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, 0, 0, now_abs);
-        momentumscrollrest2 = wvdivisor ? dy % wvdivisor : 0;
+        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, wvdivisor ? dx / wvdivisor : 0, 0, now_abs);
+        momentumscrollrest2_y = wvdivisor ? dy % wvdivisor : 0;
+        momentumscrollrest2_x = wvdivisor ? dx % wvdivisor : 0;
     
         // adjust momentumscrollcurrent
-        momentumscrollcurrent = momentumscrollcurrent * momentumscrollmultiplier + momentumscrollrest1;
-        momentumscrollrest1 = momentumscrollcurrent % momentumscrolldivisor;
-        momentumscrollcurrent /= momentumscrolldivisor;
+        momentumscrollcurrent_y = momentumscrollcurrent_y * momentumscrollmultiplier + momentumscrollrest1_y;
+        momentumscrollcurrent_x = momentumscrollcurrent_x * momentumscrollmultiplier + momentumscrollrest1_x;
+        momentumscrollrest1_y = momentumscrollcurrent_y % momentumscrolldivisor;
+        momentumscrollrest1_x = momentumscrollcurrent_x % momentumscrolldivisor;
+        momentumscrollcurrent_y /= momentumscrolldivisor;
+        momentumscrollcurrent_x /= momentumscrolldivisor;
         
         // start another timer
         setTimerTimeout(scrollTimer, momentumscrolltimer);
@@ -442,7 +457,8 @@ void VoodooPS2TouchPadBase::onScrollTimer(void)
     else
     {
         // no more scrolling...
-        momentumscrollcurrent = 0;
+        momentumscrollcurrent_y = 0;
+        momentumscrollcurrent_x = 0;
     }
 }
 
@@ -880,8 +896,41 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);
             
-            // Reset and enable the touchpad.
-            initTouchPad();
+
+            _device->lock();
+
+
+              //
+              // Perform any implementation specific device initialization
+              //
+              if (!deviceSpecificInit()) {
+                  _device->unlock();
+                  _device->release();
+                  return ;
+              }
+
+              //
+              // Install our driver's interrupt handler, for asynchronous data delivery.
+              //
+
+              DEBUG_LOG("touchpadbase : i will install interrupt");
+
+              _device->installInterruptAction(this,
+                                              OSMemberFunctionCast(PS2InterruptAction,this,&VoodooPS2TouchPadBase::interruptOccurred),
+                                              OSMemberFunctionCast(PS2PacketAction, this, &VoodooPS2TouchPadBase::packetReady));
+              _interruptHandlerInstalled = true;
+
+              DEBUG_LOG("touchpadbase : call to afterInstall Interrupt");
+
+              afterInstallInterrupt();
+
+              // now safe to allow other threads
+              _device->unlock();
+
+              afterDeviceUnlock();
+
+
+
             break;
     }
 }
@@ -995,7 +1044,8 @@ void VoodooPS2TouchPadBase::receiveMessage(int message, void* data)
                     break;
                     
                 default:
-                    momentumscrollcurrent = 0;  // keys cancel momentum scroll
+                    momentumscrollcurrent_y = 0;  // keys cancel momentum scroll
+                    momentumscrollcurrent_x = 0; 
                     keytime = pInfo->time;
             }
             break;

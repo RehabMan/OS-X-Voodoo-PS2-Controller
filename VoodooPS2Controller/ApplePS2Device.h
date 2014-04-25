@@ -104,6 +104,8 @@
 #define kCP_ReadTestInputs             0xE0 //
 #define kCP_PulseOutputBitBase         0xF0 //
 
+#define kDP_SetMousePoll               0xF0 // (mouse)
+
 //
 // Bit definitions for the 8-bit "Command Byte" register, which is accessed
 // through the kCP_GetCommandByte/kCP_SetCommandByte.  kCP_DisableMouseClock,

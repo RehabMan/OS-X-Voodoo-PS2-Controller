@@ -931,7 +931,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject(kUseISOLayoutKeyboard));
     if (xml) {
         if (xml->isTrue()) {
-            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 'ï¿½ï¿½'
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x29];     //Grave '~'
         }
         else {
