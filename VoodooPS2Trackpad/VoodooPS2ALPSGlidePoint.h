@@ -234,7 +234,6 @@ protected:
     virtual bool deviceSpecificInit();
     virtual void afterInstallInterrupt();
     virtual void afterDeviceUnlock();
-    virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
 
     bool enterCommandMode();
 
