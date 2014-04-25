@@ -6,10 +6,10 @@
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
 	<string>1.8.11, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
-	<key>CFBundleExecutable</key>
-	<string>VoodooPS2Keyboard</string>
 	<key>CFBundleIdentifier</key>
 	<string>org.rehabman.voodoo.driver.PS2Keyboard</string>
+	<key>CFBundleExecutable</key>
+	<string>VoodooPS2Keyboard</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -323,9 +323,6 @@
 						</array>
 						<key>Custom PS2 Map</key>
 						<array>
-							<string>56=2b</string>
-							<string>29=56</string>
-							<string>2b=29</string>
 							<string>e01e=e037</string>
 							<string>e037=e01e</string>
 						</array>
