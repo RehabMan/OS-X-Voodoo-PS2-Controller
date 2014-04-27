@@ -215,73 +215,13 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-<<<<<<< HEAD
-=======
-void ApplePS2ALPSGlidePoint::setCommandByte(UInt8 setBits, UInt8 clearBits) {
-	//
-	// Sets the bits setBits and clears the bits clearBits "atomically" in the
-	// controller's Command Byte.   Since the controller does not provide such
-	// a read-modify-write primitive, we resort to a test-and-set try loop.
-	//
-	// Do NOT issue this request from the interrupt/completion context.
-	//
-
-	UInt8 commandByte;
-	UInt8 commandByteNew;
-	PS2Request * request = _device->allocateRequest();
-
-	if (!request)
-		return;
-
-	do {
-		// (read command byte)
-		request->commands[0].command = kPS2C_WriteCommandPort;
-		request->commands[0].inOrOut = kCP_GetCommandByte;
-		request->commands[1].command = kPS2C_ReadDataPort;
-		request->commands[1].inOrOut = 0;
-		request->commandsCount = 2;
-		_device->submitRequestAndBlock( request );
-
-		//
-		// Modify the command byte as requested by caller.
-		//
-
-		commandByte = request->commands[1].inOrOut;
-		commandByteNew = ( commandByte | setBits ) & ( ~clearBits );
-
-		// ("test-and-set" command byte)
-		request->commands[0].command = kPS2C_WriteCommandPort;
-		request->commands[0].inOrOut = kCP_GetCommandByte;
-		request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-		request->commands[1].inOrOut = commandByte;
-		request->commands[2].command = kPS2C_WriteCommandPort;
-		request->commands[2].inOrOut = kCP_SetCommandByte;
-		request->commands[3].command = kPS2C_WriteDataPort;
-		request->commands[3].inOrOut = commandByteNew;
-		request->commandsCount = 4;
-		_device->submitRequestAndBlock( request );
-
-		//
-		// Repeat this loop if last command failed, that is, if the
-		// old command byte was modified since we first read it.
-		//
-
-	} while (request->commandsCount != 4);
-
-	_device->freeRequest( request );
-}
-
->>>>>>> 9a7e1ac0bee509670aaf262750955956ce64ab22
 void ApplePS2ALPSGlidePoint::afterInstallInterrupt() {
 
 	DEBUG_LOG( "afterInterruptInstall  - AlpsGlidepoint\n" );
 
 	enterCommandMode();
-<<<<<<< HEAD
+
 	_device-> setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
-=======
-	setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
->>>>>>> 9a7e1ac0bee509670aaf262750955956ce64ab22
 	exitCommandMode();
 		setTouchPadEnable( true );
 }

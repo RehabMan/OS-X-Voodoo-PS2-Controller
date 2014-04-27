@@ -114,8 +114,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = 700;
-    swipedy = 600;
+    swipedx = 500;
+    swipedy = 500;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
     _buttonCount = 2;

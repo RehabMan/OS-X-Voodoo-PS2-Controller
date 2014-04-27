@@ -168,7 +168,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = swipedy = 800;
+    swipedx = swipedy = 600;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
     _buttonCount = 2;

@@ -287,9 +287,9 @@
 					<key>ScrollResolution</key>
 					<integer>2950</integer>
 					<key>SwipeDeltaX</key>
-					<integer>800</integer>
+					<integer>600</integer>
 					<key>SwipeDeltaY</key>
-					<integer>800</integer>
+					<integer>500</integer>
 					<key>MouseCount</key>
 					<integer>0</integer>
 					<key>USBMouseStopsTrackpad</key>
