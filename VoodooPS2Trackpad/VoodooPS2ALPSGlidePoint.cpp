@@ -1199,7 +1199,12 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             if (MODE_DRAGLOCK == touchmode || (!immediateclick || now_ns - touchtime > maxdbltaptime)) {
                 buttons |= 0x1;
             }
-            // fall through
+//            calculateMovement(x, y, z, fingers, dx, dy);
+//            if (abs(dx)>10 || abs(dy)>10){
+//                buttons &= 0xfe; //reset mouse drag if click wasnt in aproximatly same place
+//            }
+//            break;
+            // no fall  through
         case MODE_MOVE:
             calculateMovement(x, y, z, fingers, dx, dy);
             break;

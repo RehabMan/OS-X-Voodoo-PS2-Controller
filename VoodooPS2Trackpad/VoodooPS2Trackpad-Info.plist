@@ -207,7 +207,7 @@
 					<key>MaxDragTime</key>
 					<integer>180000000</integer>
 					<key>MaxTapTime</key>
-					<integer>130000000</integer>
+					<integer>100000000</integer>
 					<key>MultiFingerHorizontalDivisor</key>
 					<integer>1</integer>
 					<key>MultiFingerVerticalDivisor</key>

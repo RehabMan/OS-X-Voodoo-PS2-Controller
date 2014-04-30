@@ -79,8 +79,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
 	ctrigger=0;
 	centerx=3000;
 	centery=3000;
-	maxtaptime=130000000;
-	maxdragtime=230000000;
+	maxtaptime=100000000;
+	maxdragtime=200000000;
 	hsticky=0;
 	vsticky=0;
 	wsticky=0;
@@ -739,7 +739,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"MaxDragTime",                     &maxdragtime},
-        {"MaxTapTime",                      &maxtaptime},
+        {"",                      &maxtaptime},
         {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
         {"MomentumScrollTimer",             &momentumscrolltimer},
