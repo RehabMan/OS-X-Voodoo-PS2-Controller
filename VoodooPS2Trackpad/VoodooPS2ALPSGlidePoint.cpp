@@ -341,17 +341,17 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data) {
 
     // Right now this checks if the packet is either a PS/2 packet (data & 0xc8)
     // or if the first packet matches the specific trackpad first packet
-    if (0 == _packetByteCount && (data & 0xc8) != 0x08 && (data & modelData.mask0) != modelData.byte0) {
-        DEBUG_LOG("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
-        return kPS2IR_packetBuffering;
-    }
-
-    /* Bytes 2 - packet size should have 0 in highest bit */
-    if (_packetByteCount >= 1 && data == 0x80) {
-        DEBUG_LOG("%s: Unexpected byte%d data (%02x) from PS/2 controller\n", getName(), _packetByteCount, data);
-        _packetByteCount = 0;
-        return kPS2IR_packetBuffering;
-    }
+//    if (0 == _packetByteCount && (data & 0xc8) != 0x08 && (data & modelData.mask0) != modelData.byte0) {
+//        DEBUG_LOG("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
+//        return kPS2IR_packetBuffering;
+//    }
+//
+//    /* Bytes 2 - packet size should have 0 in highest bit */
+//    if (_packetByteCount >= 1 && data == 0x80) {
+//        DEBUG_LOG("%s: Unexpected byte%d data (%02x) from PS/2 controller\n", getName(), _packetByteCount, data);
+//        _packetByteCount = 0;
+//        return kPS2IR_packetBuffering;
+//    }
 
     UInt8 *packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
@@ -2762,8 +2762,8 @@ void ApplePS2ALPSGlidePoint::setDefaults() {
 			modelData.byte0 = 0xc8;
 			modelData.mask0 = 0xc8;
 			modelData.flags = 0;
-			modelData.x_max = 1360;
-			modelData.y_max = 660;
+			modelData.x_max = 1400;
+			modelData.y_max = 700;
 			modelData.x_bits = 23;
 			modelData.y_bits = 12;
 			//decode_fields = &ApplePS2ALPSGlidePoint::decodePacketV6;
