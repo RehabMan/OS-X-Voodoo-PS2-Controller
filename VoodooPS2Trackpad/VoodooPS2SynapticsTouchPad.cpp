@@ -178,7 +178,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadtrackboth = true;
     
     bogusdxthresh = 400;
-    bogusdythresh = 350;
+    bogusdythresh = 300;
     
     scrolldxthresh = 0;
     scrolldythresh = 0;
@@ -238,10 +238,10 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     momentumscroll = true;
     scrollTimer = 0;
     momentumscrolltimer = 10000000;
-    momentumscrollthreshy = 7;
+    momentumscrollthreshy = 2;
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
-    momentumscrollsamplesmin = 3;
+    momentumscrollsamplesmin = 1;
     momentumscrollcurrent_y = 0;
     momentumscrollcurrent_x = 0;
     

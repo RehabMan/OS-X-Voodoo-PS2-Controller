@@ -125,7 +125,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     clickpadtrackboth = true;
     
     bogusdxthresh = 400;
-    bogusdythresh = 350;
+    bogusdythresh = 300;
     
     scrolldxthresh = 0;
     scrolldythresh = 0;

@@ -309,7 +309,7 @@
 					<key>DragLockTempMask</key>
 					<integer>1048592</integer>
 					<key>MomentumScrollThreshY</key>
-					<integer>7</integer>
+					<integer>2</integer>
 					<key>MomentumScrollTimer</key>
 					<integer>10000000</integer>
 					<key>MomentumScrollMultiplier</key>
@@ -317,7 +317,7 @@
 					<key>MomentumScrollDivisor</key>
 					<integer>100</integer>
 					<key>MomentumScrollSamplesMin</key>
-					<integer>3</integer>
+					<integer>1</integer>
 					<key>ClickPadClickTime</key>
 					<integer>300000000</integer>
 					<key>ClickPadTrackBoth</key>
@@ -327,7 +327,7 @@
 					<key>BogusDeltaThreshX</key>
 					<integer>400</integer>
 					<key>BogusDeltaThreshY</key>
-					<integer>350</integer>
+					<integer>300</integer>
 					<key>UnitsPerMMX</key>
 					<integer>50</integer>
 					<key>UnitsPerMMY</key>
@@ -337,9 +337,9 @@
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
 					<key>ScrollDeltaThreshX</key>
-					<integer>10</integer>
+					<integer>5</integer>
 					<key>ScrollDeltaThreshY</key>
-					<integer>10</integer>
+					<integer>5</integer>
 					<key>DragExitDelayTime</key>
 					<integer>1000000000</integer>
 				</dict>

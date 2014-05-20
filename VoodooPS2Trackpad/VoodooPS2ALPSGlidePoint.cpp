@@ -1547,9 +1547,9 @@ void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers,
 //        yrest = dy % divisory;
         // This was in the original version but not sure why...seems OK if
         // the user is moving fast, at least on the ALPS hardware here
-		        if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh) {
-		            dx = dy = xrest = yrest = 0;
-		        }
+        if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh) {
+            dx = dy = xrest = yrest = 0;
+        }
     }
 }
 
