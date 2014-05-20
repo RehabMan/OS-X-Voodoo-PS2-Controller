@@ -97,7 +97,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
     noled = false;
-    maxaftertyping = 500000000;
+    maxaftertyping = 250000000;
     mousemultiplierx = 20;
     mousemultipliery = 20;
     mousescrollmultiplierx = 20;

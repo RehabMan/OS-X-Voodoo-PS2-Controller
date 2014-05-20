@@ -63,7 +63,7 @@
 					<key>ScrollYInverter</key>
 					<integer>1</integer>
 					<key>QuietTimeAfterTyping</key>
-					<integer>500000000</integer>
+					<integer>250000000</integer>
 					<key>ActLikeTrackpad</key>
 					<false/>
 					<key>TrackpadScroll</key>

@@ -227,7 +227,7 @@
 					<key>ZLimit</key>
 					<integer>115</integer>
 					<key>QuietTimeAfterTyping</key>
-					<integer>500000000</integer>
+					<integer>250000000</integer>
 					<key>DisableLEDUpdating</key>
 					<false/>
 					<key>MouseMultiplierX</key>
