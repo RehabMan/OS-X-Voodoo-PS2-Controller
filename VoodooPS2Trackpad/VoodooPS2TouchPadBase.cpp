@@ -103,7 +103,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     mousescrollmultiplierx = 20;
     mousescrollmultipliery = 20;
     mousemiddlescroll = true;
-    wakedelay = 1000;
+    wakedelay = 1500;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
@@ -124,8 +124,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     clickpadclicktime = 300000000; // 300ms default
     clickpadtrackboth = true;
     
-    bogusdxthresh = 400;
-    bogusdythresh = 300;
+    bogusdxthresh = 700;
+    bogusdythresh = 500;
     
     scrolldxthresh = 0;
     scrolldythresh = 0;

@@ -177,8 +177,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadclicktime = 300000000; // 300ms default
     clickpadtrackboth = true;
     
-    bogusdxthresh = 400;
-    bogusdythresh = 300;
+    bogusdxthresh = 700;
+    bogusdythresh = 500;
     
     scrolldxthresh = 0;
     scrolldythresh = 0;

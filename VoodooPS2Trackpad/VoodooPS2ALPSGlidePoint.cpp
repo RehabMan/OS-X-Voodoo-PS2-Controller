@@ -1229,6 +1229,8 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         break;
                     }
                     calculateMovement(x, y, z, fingers, dx, dy);
+                    dx = dx * abs(dx)/20;
+                    dy = dy * abs(dy)/20;
                     // check for stopping or changing direction
 					if ((( dy < 0 ) != ( dy_history.newest() < 0 ) || dy == 0) ||
 					(( dx < 0 ) != ( dx_history.newest() < 0 ) || dx == 0)) {
@@ -1238,7 +1240,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         time_history.reset();
                     }
                     // put movement and time in history for later
-                    dy_history.filter(dy);
+                    dy_history.filter( dy );
 					dx_history.filter( dx );
                     time_history.filter(now_ns);
                     if (0 != dy || 0 != dx) {
