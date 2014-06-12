@@ -71,7 +71,7 @@
 					<key>DisableLEDUpdating</key>
 					<false/>
 					<key>WakeDelay</key>
-					<integer>1000</integer>
+					<integer>2500</integer>
 					<key>MouseCount</key>
 					<integer>0</integer>
 					<key>ButtonCount</key>

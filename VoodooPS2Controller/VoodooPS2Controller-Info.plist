@@ -60,14 +60,14 @@
 				<key>Default</key>
 				<dict>
 					<key>WakeDelay</key>
-					<integer>10</integer>
+					<integer>25</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
 					<key>ProBook</key>
 					<dict>
 						<key>WakeDelay</key>
-						<integer>0</integer>
+						<integer>25</integer>
 					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
@@ -99,7 +99,7 @@
 					<key>Haswell-Ideapad</key>
 					<dict>
 						<key>WakeDelay</key>
-						<integer>0</integer>
+						<integer>25</integer>
 					</dict>
 					<key>U430</key>
 					<string>Haswell-Ideapad</string>

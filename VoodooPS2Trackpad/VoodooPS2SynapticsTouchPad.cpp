@@ -157,7 +157,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     mousescrollmultiplierx = 20;
     mousescrollmultipliery = 20;
     mousemiddlescroll = true;
-    wakedelay = 1000;
+    wakedelay = 2500;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
