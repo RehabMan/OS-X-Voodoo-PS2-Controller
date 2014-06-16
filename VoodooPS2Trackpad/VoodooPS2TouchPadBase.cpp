@@ -895,7 +895,7 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
             //
 
             IOSleep(wakedelay);
-            
+            IOSleep(wakedelay);            
 
             _device->lock();
 
