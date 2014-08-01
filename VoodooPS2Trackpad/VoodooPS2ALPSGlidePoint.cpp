@@ -223,7 +223,7 @@ void ApplePS2ALPSGlidePoint::afterInstallInterrupt() {
 
 	_device-> setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
 	exitCommandMode();
-		setTouchPadEnable( true );
+
 }
 void ApplePS2ALPSGlidePoint::afterDeviceUnlock() {
 	DEBUG_LOG( " afterDeviceUnlock  - AlpsGlidepoint\n" );
