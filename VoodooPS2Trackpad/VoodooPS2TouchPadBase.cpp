@@ -888,12 +888,14 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
             //
             // Disable touchpad (synchronous).
             //
+            DEBUG_LOG("disable touchpad - power settings\n");
             setTouchPadEnable( false );
             
             if (_interruptHandlerInstalled)
             {
                 _device->uninstallInterruptAction();
                 _interruptHandlerInstalled = false;
+                DEBUG_LOG("uninstall interrupt handler for touchpad\n");
             }
             //
             // Uinstall message handler.
@@ -902,6 +904,7 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
             {
                 _device->uninstallMessageAction();
                 _messageHandlerInstalled = false;
+                DEBUG_LOG("uninstall message handler\n");
             }
             
             break;
@@ -915,64 +918,6 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);            
 
-            //
-            // Advertise the current state of the tapping feature.
-            //
-            // Must add this property to let our superclass know that it should handle
-            // trackpad acceleration settings from user space.  Without this, tracking
-            // speed adjustments from the mouse prefs panel have no effect.
-            //
-            
-            setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-            setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
-            setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
-            
-            //
-            // Setup workloop with command gate for thread synchronization...
-            //
-            IOWorkLoop* pWorkLoop = getWorkLoop();
-            _cmdGate = IOCommandGate::commandGate(this);
-            if (!pWorkLoop || !_cmdGate)
-            {
-                _device->release();
-                DEBUG_LOG("iowork looop maa\n");
-                break;
-            }
-            
-            //
-            // Setup button timer event source
-            //
-            if (_buttonCount >= 3)
-            {
-                _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onButtonTimer));
-                if (!_buttonTimer)
-                {
-                    _device->release();
-                    DEBUG_LOG("aaaaaaaabbbbb\n");
-                    break;
-                }
-                pWorkLoop->addEventSource(_buttonTimer);
-            }
-            
-            //
-            // Setup dragTimer event source
-            //
-            if (dragexitdelay)
-            {
-                dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onDragTimer));
-                if (dragTimer)
-                    pWorkLoop->addEventSource(dragTimer);
-            }
-            
-            pWorkLoop->addEventSource(_cmdGate);
-            
-            //
-            // Setup scrolltimer event source
-            //
-            scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onScrollTimer));
-            if (scrollTimer)
-                pWorkLoop->addEventSource(scrollTimer);
-            
             //
             // Lock the controller during initialization
             //
