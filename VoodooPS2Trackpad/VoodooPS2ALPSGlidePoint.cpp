@@ -1734,6 +1734,7 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
 
 	if (modelData.proto_version==ALPS_PROTO_V6){
 			setTouchPadV6Enable( enable );
+            touchpadEnable=enable;
 			return;
 	}
     //
@@ -1747,6 +1748,7 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
         // to disable just reset the mouse
         resetMouse();
     }
+            touchpadEnable=enable;    
 }
 
 bool ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {

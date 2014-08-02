@@ -918,6 +918,10 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);            
 
+            if (touchpadEnable==true){
+                DEBUG_LOG("power ON disable touchpad - power settings\n");
+                setTouchPadEnable( false );
+            }
             if (_interruptHandlerInstalled)
             {
                 _device->uninstallInterruptAction();

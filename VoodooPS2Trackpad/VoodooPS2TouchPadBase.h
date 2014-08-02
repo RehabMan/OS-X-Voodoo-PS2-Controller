@@ -96,6 +96,7 @@ protected:
 
     // state related to secondary packets/extendedwmode
     int lastx2, lasty2;
+    bool touchpadEnable = false;
     bool tracksecondary;
     int xrest2, yrest2;
     bool clickedprimary;
