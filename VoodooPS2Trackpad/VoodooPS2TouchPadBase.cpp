@@ -918,6 +918,23 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);            
 
+            if (_interruptHandlerInstalled)
+            {
+                _device->uninstallInterruptAction();
+                _interruptHandlerInstalled = false;
+                DEBUG_LOG("powerON uninstall interrupt handler for touchpad\n");
+            }
+            //
+            // Uinstall message handler.
+            //
+            if (_messageHandlerInstalled)
+            {
+                _device->uninstallMessageAction();
+                _messageHandlerInstalled = false;
+                DEBUG_LOG("powerON uninstall message handler\n");
+            }
+
+            
             //
             // Lock the controller during initialization
             //
