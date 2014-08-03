@@ -349,7 +349,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _newIRQLayout = false;	// turbo
 #endif
     
-  _wakedelay = 25;
+  _wakedelay = 10;
   _cmdGate = 0;
     
   _requestQueueLock = 0;

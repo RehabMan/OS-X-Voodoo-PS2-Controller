@@ -105,7 +105,7 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   buttonmask                 = ~0;
   scroll                     = true;
   noled                      = false;
-  wakedelay                  = 2500;
+  wakedelay                  = 1000;
   usb_mouse_stops_trackpad   = true;
   mousecount                 = 0;
   _cmdGate = 0;

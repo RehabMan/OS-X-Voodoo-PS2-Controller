@@ -177,12 +177,12 @@ error:
 #ifdef DEBUG
 static void logKeySequence(const char* header, UInt16* pAction)
 {
-    DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
+  //  DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
     for (; *pAction; ++pAction)
     {
-        DEBUG_LOG("%04x, ", *pAction);
+    //    DEBUG_LOG("%04x, ", *pAction);
     }
-    DEBUG_LOG("}\n");
+    //DEBUG_LOG("}\n");
 }
 #endif
 
@@ -1714,23 +1714,23 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     }
         
 #ifdef DEBUG
-    // allow hold Alt+numpad keys to type in arbitrary ADB key code
+//    // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
-    if (goingDown && KBV_IS_KEYDOWN(0x38) &&
-        ((keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 && keyCodeRaw != 0x4e && keyCodeRaw != 0x4a) ||
-        (keyCodeRaw >= 0x02 && keyCodeRaw <= 0x0B)))
-    {
-        // map numpad scan codes to digits
-        static int map1[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
-        static int map2[0x0B-0x02+1] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-        if (-1 == genADB)
-            genADB = 0;
-        int digit = keyCodeRaw >= 0x47 ? map1[keyCodeRaw-0x47] : map2[keyCodeRaw-0x02];
-        if (-1 != digit)
-            genADB = genADB * 10 + digit;
-        DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
-        keyCode = 0;    // eat it
-    }
+//    if (goingDown && KBV_IS_KEYDOWN(0x38) &&
+//        ((keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 && keyCodeRaw != 0x4e && keyCodeRaw != 0x4a) ||
+//        (keyCodeRaw >= 0x02 && keyCodeRaw <= 0x0B)))
+//    {
+//        // map numpad scan codes to digits
+//        static int map1[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
+//        static int map2[0x0B-0x02+1] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+//        if (-1 == genADB)
+//            genADB = 0;
+//        int digit = keyCodeRaw >= 0x47 ? map1[keyCodeRaw-0x47] : map2[keyCodeRaw-0x02];
+//        if (-1 != digit)
+//            genADB = genADB * 10 + digit;
+//        DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
+//        keyCode = 0;    // eat it
+//    }
 #endif
     
     // We have a valid key event -- dispatch it to our superclass.
@@ -1787,10 +1787,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
     if (logscancodes==2 || (logscancodes==1 && goingDown))
     {
-        if (keyCode == keyCodeRaw)
-            IOLog("%s: sending key %x=%x %s\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
-        else
-            IOLog("%s: sending key %x=%x, %x=%x %s\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
+//        if (keyCode == keyCodeRaw)
+//            IOLog("%s: sending key %x=%x %s\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
+//        else
+//            IOLog("%s: sending key %x=%x, %x=%x %s\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
     }
     
     // allow mouse/trackpad driver to have time of last keyboard activity
@@ -1817,7 +1817,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         // dispatch typed adb code
         dispatchKeyboardEventX(genADB, true, now_abs);
         dispatchKeyboardEventX(genADB, false, now_abs);
-        DEBUG_LOG("%s: sending typed ADB code 0x%x\n", getName(), genADB);
+      //  DEBUG_LOG("%s: sending typed ADB code 0x%x\n", getName(), genADB);
         genADB = -1;
     }
 #endif

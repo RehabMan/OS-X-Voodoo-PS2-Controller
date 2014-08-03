@@ -372,18 +372,21 @@ void ApplePS2ALPSGlidePoint::packetReady() {
     while (_ringBuffer.count() >= modelData.pktsize) {
         UInt8 *packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
-		DEBUG_LOG( "ps2: packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n",
-				packet[0], packet[1], packet[2], packet[3], packet[4],
-				packet[5] );
+//		DEBUG_LOG( "ps2: packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n",
+//				packet[0], packet[1], packet[2], packet[3], packet[4],
+//				packet[5] );
 
         if ((packet[0] & modelData.mask0) == modelData.byte0) {
-            DEBUG_LOG("ps2: Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+//            DEBUG_LOG("ps2: Got pointer event with packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             (this->*process_packet)(packet);
             _ringBuffer.advanceTail(modelData.pktsize);
         } else {
+            DEBUG_LOG( "ps2: packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n",
+                    packet[0], packet[1], packet[2], packet[3], packet[4],
+                    packet[5] );
             DEBUG_LOG("ps2: Intercepted bare PS/2 packet..ignoring\n");
             // Ignore bare PS/2 packet for now...messes with the actual full 6-byte ALPS packet above
-//            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
+            //  dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
             _ringBuffer.advanceTail(kPacketLengthSmall);
         }
     }
@@ -590,13 +593,13 @@ void ApplePS2ALPSGlidePoint::processTrackstickPacketV3(UInt8 *packet) {
     // normal mode: middle button is not pressed or no movement made
     if ( ((0 == x) && (0 == y)) || (0 == (buttons & 0x04))) {
         y += y >> 1; x += x >> 1;
-        DEBUG_LOG("ps2: trackStick: dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
-                  x, y, raw_buttons, buttons, z);
+//        DEBUG_LOG("ps2: trackStick: dispatch relative pointer with x=%d, y=%d, tbuttons = %d, buttons=%d, (z=%d, not reported)\n",
+//                  x, y, raw_buttons, buttons, z);
         dispatchRelativePointerEventX(x, y, buttons, now_abs);
     } else {
         // scroll mode
         y = -y; x = -x;
-        DEBUG_LOG("ps2: trackStick: dispatchScrollWheelEventX: dv=%d, dh=%d\n", y, x);
+//        DEBUG_LOG("ps2: trackStick: dispatchScrollWheelEventX: dv=%d, dh=%d\n", y, x);
         dispatchScrollWheelEventX(y, x, 0, now_abs);
     }
 }
@@ -837,7 +840,7 @@ void ApplePS2ALPSGlidePoint::processPacketV6MultiTouch(UInt8 *packet) {
 	UInt32 x_bitmap, y_bitmap;
 	int nrOfFingers, fingersFromBitMap;
 
-	DEBUG_LOG( "ProcessPacket v6 - multi-touch Packet" );
+//	DEBUG_LOG( "ProcessPacket v6 - multi-touch Packet" );
 
 	modelData.multi_packet = ( packet[0] & 0x20 ) == 0x20;
 
@@ -851,8 +854,8 @@ void ApplePS2ALPSGlidePoint::processPacketV6MultiTouch(UInt8 *packet) {
 				| ( ( packet[3] & 0x70 ) << 15 )
 				| ( ( packet[0] & 0x01 ) << 22 );
 		y_map = ( packet[1] & 0x7f ) | ( ( packet[2] & 0x1f ) << 7 );
-		DEBUG_LOG( "alps mt :  trackpad : number of fingers :%d\n ",
-				nrOfFingers );
+//		DEBUG_LOG( "alps mt :  trackpad : number of fingers :%d\n ",
+//				nrOfFingers );
 		fingersFromBitMap = processBitmap( x_map, y_map, &x1, &y1, &x2, &y2 );
 		modelData.fingers = nrOfFingers;
 		modelData.x1 = x1;
@@ -874,7 +877,7 @@ void ApplePS2ALPSGlidePoint::processPacketV6MultiTouch(UInt8 *packet) {
 	raw_buttons |= right ? 0x02 : 0;
 	raw_buttons |= middle ? 0x04 : 0;
 
-	DEBUG_LOG( "alps mt :  2ndpacket :x=%d,y=%d,z=%d ,buttons = %d\n ", x,y,z,buttons );
+//	DEBUG_LOG( "alps mt :  2ndpacket :x=%d,y=%d,z=%d ,buttons = %d\n ", x,y,z,buttons );
 
 //	if (0 == raw_buttons) {
 //		buttons = lastbuttons;
@@ -973,8 +976,8 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
 
-    DEBUG_LOG("%s::dispatchEventsWithInfo: x=%d, y=%d, z=%d, fingers=%d, buttons=%d\n",
-    getName(), xraw, yraw, z, fingers, buttonsraw);
+//    DEBUG_LOG("%s::dispatchEventsWithInfo: x=%d, y=%d, z=%d, fingers=%d, buttons=%d\n",
+//    getName(), xraw, yraw, z, fingers, buttonsraw);
     
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm) {
@@ -992,7 +995,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     // allow middle button to be simulated with two buttons down
     if (!clickpadtype || fingers == 3) {
         buttons = middleButton(buttons, now_abs, fingers == 3 ? fromPassthru : fromTrackpad);
-        DEBUG_LOG("New buttons value after check for middle click: %d\n", buttons);
+//        DEBUG_LOG("New buttons value after check for middle click: %d\n", buttons);
     }
 
     // recalc middle buttons if finger is going down
@@ -1001,13 +1004,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
 
     if (last_fingers > 0 && fingers > 0 && last_fingers != fingers) {
-        DEBUG_LOG("Start ignoring delta with finger change\n");
+//        DEBUG_LOG("Start ignoring delta with finger change\n");
         // ignore deltas for a while after finger change
         ignoredeltas = ignoredeltasstart;
     }
 
     if (last_fingers != fingers) {
-        DEBUG_LOG("Finger change, reset averages\n");
+//        DEBUG_LOG("Finger change, reset averages\n");
         // reset averages after finger change
         x_undo.reset();
         y_undo.reset();
@@ -1030,7 +1033,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
 
     if (ignoredeltas) {
-        DEBUG_LOG("Still ignoring deltas. Value=%d\n", ignoredeltas);
+//        DEBUG_LOG("Still ignoring deltas. Value=%d\n", ignoredeltas);
         lastx = x;
         lasty = y;
         if (--ignoredeltas == 0) {
@@ -1044,7 +1047,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     // deal with "OutsidezoneNoAction When Typing"
     if (outzone_wt && z > z_finger && now_ns - keytime < maxaftertyping &&
             (x < zonel || x > zoner || y < zoneb || y > zonet)) {
-        DEBUG_LOG("Ignore touch input after typing\n");
+//        DEBUG_LOG("Ignore touch input after typing\n");
         // touch input was shortly after typing and outside the "zone"
         // ignore it...
         return;
@@ -1052,7 +1055,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
     // if trackpad input is supposed to be ignored, then don't do anything
     if (ignoreall) {
-        DEBUG_LOG("ignoreall is set, returning\n");
+//        DEBUG_LOG("ignoreall is set, returning\n");
         return;
     }
 
@@ -1062,7 +1065,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
     if (z < z_finger && isTouchMode()) {
         // Finger has been lifted
-        DEBUG_LOG("finger lifted after touch\n");
+//        DEBUG_LOG("finger lifted after touch\n");
         xrest = yrest = scrollrest = 0;
         inSwipeLeft = inSwipeRight = inSwipeUp = inSwipeDown = 0;
         inSwipe4Left = inSwipe4Right = inSwipe4Up = inSwipe4Down = 0;
@@ -1071,17 +1074,17 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         tracksecondary = false;
 
 		if (dy_history.count() || dx_history.count()) {
-			DEBUG_LOG(
-					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
-					time_history.newest(), time_history.oldest(),
-					time_history.newest() - time_history.oldest(),
-					dy_history.sum(), dy_history.count(),
-					dy_history.average(),
-					dx_history.sum(), dx_history.count(),
-					dx_history.average()
-			);
+//			DEBUG_LOG(
+//					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
+//					time_history.newest(), time_history.oldest(),
+//					time_history.newest() - time_history.oldest(),
+//					dy_history.sum(), dy_history.count(),
+//					dy_history.average(),
+//					dx_history.sum(), dx_history.count(),
+//					dx_history.average()
+//			);
 		} else {
-            DEBUG_LOG("ps2: no time/dy history\n");
+//            DEBUG_LOG("ps2: no time/dy history\n");
         }
 
         // check for scroll momentum start
@@ -1104,9 +1107,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         time_history.reset();
         dy_history.reset();
 		dx_history.reset();
-		DEBUG_LOG( "ps2: now_ns-touchtime=%lld (%s). touchmode=%d\n",
-				(uint64_t) (now_ns - touchtime) / 1000,
-				now_ns - touchtime < maxtaptime ? "true" : "false", touchmode );
+//		DEBUG_LOG( "ps2: now_ns-touchtime=%lld (%s). touchmode=%d\n",
+//				(uint64_t) (now_ns - touchtime) / 1000,
+//				now_ns - touchtime < maxtaptime ? "true" : "false", touchmode );
         if (now_ns - touchtime < maxtaptime && clicking) {
             switch (touchmode) {
                 case MODE_DRAG:
@@ -1139,7 +1142,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                             buttons |= !swapdoubletriple ? 0x2 : 0x04;
                             touchmode = MODE_NOTOUCH;
                         } else {
-                            DEBUG_LOG("Detected tap click\n");
+//                            DEBUG_LOG("Detected tap click\n");
                             buttons |= 0x1;
                             touchmode = dragging ? MODE_PREDRAG : MODE_NOTOUCH;
                         }
@@ -1192,7 +1195,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 #endif
     int dx = 0, dy = 0;
 
-    DEBUG_LOG("ps2: touchmode=%d, buttons = %d\n", touchmode, buttons);
+//    DEBUG_LOG("ps2: touchmode=%d, buttons = %d\n", touchmode, buttons);
     switch (touchmode) {
         case MODE_DRAG:
         case MODE_DRAGLOCK:
@@ -1210,12 +1213,12 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             break;
 
         case MODE_MTOUCH:
-            DEBUG_LOG("detected multitouch with fingers=%d\n", fingers);
+//            DEBUG_LOG("detected multitouch with fingers=%d\n", fingers);
             switch (fingers) {
                 case 1:
                     // transition from multitouch to single touch
                     // continue moving with the primary finger
-                    DEBUG_LOG("Transition from multitouch to single touch and move\n");
+//                    DEBUG_LOG("Transition from multitouch to single touch and move\n");
                     calculateMovement(x, y, z, fingers, dx, dy);
                     break;
                 case 2: // two finger
@@ -1262,9 +1265,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         } else {
                             yrest = 0;
                         }
-						DEBUG_LOG(
-								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
-								getName(), dy, dx );
+//						DEBUG_LOG(
+//								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
+//								getName(), dy, dx );
                         dispatchScrollWheelEventX(dy, dx, 0, now_abs);
                         dx = dy = 0;
                     }
@@ -1276,7 +1279,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     // Now calculate total movement since 3 fingers down (add to total)
                     xmoved += dx;
                     ymoved += dy;
-                    DEBUG_LOG("xmoved=%d, ymoved=%d, inSwipeUp=%d, inSwipeRight=%d, inSwipeLeft=%d, inSwipeDown=%d\n", xmoved, ymoved, inSwipeUp, inSwipeRight, inSwipeLeft, inSwipeDown);
+//                    DEBUG_LOG("xmoved=%d, ymoved=%d, inSwipeUp=%d, inSwipeRight=%d, inSwipeLeft=%d, inSwipeDown=%d\n", xmoved, ymoved, inSwipeUp, inSwipeRight, inSwipeLeft, inSwipeDown);
                     // Reset relative movement so we don't actually report that
                     // there was regular movement
                     dx = 0;
@@ -1448,7 +1451,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
     // capture time of tap, and watch for double/triple tap
     if (isFingerTouch(z)) {
-        DEBUG_LOG("isFingerTouch\n");
+//        DEBUG_LOG("isFingerTouch\n");
         // taps don't count if too close to typing or if currently in momentum scroll
 		if (( !palm_wt || now_ns - keytime >= maxaftertyping )
 				&& (!momentumscrollcurrent_y||!momentumscrollcurrent_x)) {
@@ -1541,7 +1544,7 @@ void ApplePS2ALPSGlidePoint::calculateMovement(int x, int y, int z, int fingers,
     if (last_fingers == fingers && (!palm || (z <= zlimit))) {
         dx = x - lastx;
         dy = y - lasty;
-        DEBUG_LOG("before: dx=%d, dy=%d\n", dx, dy);
+//        DEBUG_LOG("before: dx=%d, dy=%d\n", dx, dy);
         dx = (dx / (divisorx / 100.0));
         dy = (dy / (divisory / 100.0));
         // Don't worry about rest of divisor value for now...not signigicant enough
@@ -1655,7 +1658,7 @@ int ApplePS2ALPSGlidePoint::processBitmap(unsigned int xMap, unsigned int yMap, 
                 (2 * (modelData.y_bits - 1));
     }
 
-    DEBUG_LOG("ps2: Process bitmap, fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d, area = %d\n", fingers, *x1, *x2, *y1, *y2, abs(*x1 - *x2) * abs(*y1 - *y2));
+//    DEBUG_LOG("ps2: Process bitmap, fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d, area = %d\n", fingers, *x1, *x2, *y1, *y2, abs(*x1 - *x2) * abs(*y1 - *y2));
 
     return fingers;
 }
@@ -1748,7 +1751,7 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
         // to disable just reset the mouse
         resetMouse();
     }
-            touchpadEnable=enable;    
+    touchpadEnable=enable;    
 }
 
 bool ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status) {

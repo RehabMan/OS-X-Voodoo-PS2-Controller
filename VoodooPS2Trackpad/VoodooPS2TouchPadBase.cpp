@@ -103,7 +103,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     mousescrollmultiplierx = 20;
     mousescrollmultipliery = 20;
     mousemiddlescroll = true;
-    wakedelay = 1500;
+    wakedelay = 1000;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
@@ -359,6 +359,8 @@ void VoodooPS2TouchPadBase::stop( IOService * provider )
 
     assert(_device == provider);
 
+    setTouchPadEnable(false);
+    
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
     if (pWorkLoop)
@@ -885,31 +887,50 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
+        {
             //
             // Disable touchpad (synchronous).
             //
-            DEBUG_LOG("disable touchpad - power settings\n");
-            setTouchPadEnable( false );
+            DEBUG_LOG("power OFF disable touchpad - power settings\n");
+            setTouchPadEnable(false);
+
+            // free up timer for scroll momentum
+            IOWorkLoop* pWorkLoop = getWorkLoop();
+            if (pWorkLoop)
+            {
+                if (scrollTimer)
+                {
+                    pWorkLoop->removeEventSource(scrollTimer);
+                    scrollTimer->release();
+                    scrollTimer = 0;
+                }
+                if (_buttonTimer)
+                {
+                    pWorkLoop->removeEventSource(_buttonTimer);
+                    _buttonTimer->release();
+                    _buttonTimer = 0;
+                }
+                if (_cmdGate)
+                {
+                    pWorkLoop->removeEventSource(_cmdGate);
+                    _cmdGate->release();
+                    _cmdGate = 0;
+                }
+            }
+            
+            //
+            // Uninstall the interrupt handler.
+            //
             
             if (_interruptHandlerInstalled)
             {
                 _device->uninstallInterruptAction();
                 _interruptHandlerInstalled = false;
-                DEBUG_LOG("uninstall interrupt handler for touchpad\n");
-            }
-            //
-            // Uinstall message handler.
-            //
-            if (_messageHandlerInstalled)
-            {
-                _device->uninstallMessageAction();
-                _messageHandlerInstalled = false;
-                DEBUG_LOG("uninstall message handler\n");
             }
             
             break;
-
-        case kPS2C_EnableDevice:
+    }
+        case kPS2C_EnableDevice:{
             //
             // Must not issue any commands before the device has
             // completed its power-on self-test and calibration.
@@ -918,26 +939,73 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);            
 
-            if (touchpadEnable==true){
-                DEBUG_LOG("power ON disable touchpad - power settings\n");
-                setTouchPadEnable( false );
-            }
-            if (_interruptHandlerInstalled)
-            {
-                _device->uninstallInterruptAction();
-                _interruptHandlerInstalled = false;
-                DEBUG_LOG("powerON uninstall interrupt handler for touchpad\n");
-            }
+            
             //
-            // Uinstall message handler.
+            // Clear packet buffer pointer to avoid issues caused by
+            // stale packet fragments.
             //
-            if (_messageHandlerInstalled)
-            {
-                _device->uninstallMessageAction();
-                _messageHandlerInstalled = false;
-                DEBUG_LOG("powerON uninstall message handler\n");
-            }
+            
+            _packetByteCount = 0;
+            _ringBuffer.reset();
+            
+            // clear passbuttons, just in case buttons were down when system
+            // went to sleep (now just assume they are up)
+            passbuttons = 0;
+            _clickbuttons = 0;
+            tracksecondary=false;
+            
+            // clear state of control key cache
+            _modifierdown = 0;
 
+            DEBUG_LOG("power ON Enable touchpad - power settings\n");
+            
+            
+            //
+            // Setup workloop with command gate for thread synchronization...
+            //
+            IOWorkLoop* pWorkLoop = getWorkLoop();
+            _cmdGate = IOCommandGate::commandGate(this);
+            if (!pWorkLoop || !_cmdGate)
+            {
+                _device->release();
+                DEBUG_LOG("POWER ON - nu merge io workloop get");
+
+            }
+            
+            //
+            // Setup button timer event source
+            //
+            if (_buttonCount >= 3)
+            {
+                _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onButtonTimer));
+                if (!_buttonTimer)
+                {
+                    _device->release();
+                    DEBUG_LOG("POWER ON - nu merge button timer");
+
+                }
+                pWorkLoop->addEventSource(_buttonTimer);
+            }
+            
+            //
+            // Setup dragTimer event source
+            //
+            if (dragexitdelay)
+            {
+                dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onDragTimer));
+                if (dragTimer)
+                    pWorkLoop->addEventSource(dragTimer);
+            }
+            
+            pWorkLoop->addEventSource(_cmdGate);
+            
+            
+            //
+            // Setup scrolltimer event source
+            //
+            scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooPS2TouchPadBase::onScrollTimer));
+            if (scrollTimer)
+                pWorkLoop->addEventSource(scrollTimer);
             
             //
             // Lock the controller during initialization
@@ -953,7 +1021,7 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
                 _device->unlock();
                 _device->release();
                 // TODO: any other cleanup?
-                     DEBUG_LOG("nu merge specific init\n");
+                DEBUG_LOG("POWER ON - nu merge specific init");
                 break;
             }
             
@@ -961,16 +1029,14 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
             // Install our driver's interrupt handler, for asynchronous data delivery.
             //
             
-
-            if (!_interruptHandlerInstalled){
-                DEBUG_LOG("touchpadbase : i will install interrupt\n");
-                _device->installInterruptAction(this,
+            DEBUG_LOG("touchpadbase : i will install interrupt");
+            
+            _device->installInterruptAction(this,
                                             OSMemberFunctionCast(PS2InterruptAction,this,&VoodooPS2TouchPadBase::interruptOccurred),
                                             OSMemberFunctionCast(PS2PacketAction, this, &VoodooPS2TouchPadBase::packetReady));
-                _interruptHandlerInstalled = true;
-                DEBUG_LOG("touchpadbase : call to afterInstall Interrupt\n");
-            }
+            _interruptHandlerInstalled = true;
             
+            DEBUG_LOG("touchpadbase : call to afterInstall Interrupt");
             
             afterInstallInterrupt();
             setTouchPadEnable( true );
@@ -979,19 +1045,11 @@ void VoodooPS2TouchPadBase::setDevicePowerState( UInt32 whatToDo )
             _device->unlock();
             
             afterDeviceUnlock();
-            //
-            // Install our power control handler.
-            //
-            //
-            // Install message hook for keyboard to trackpad communication
-            //
-            if(!_messageHandlerInstalled){
-                _device->installMessageAction( this,
-                                          OSMemberFunctionCast(PS2MessageAction, this, &VoodooPS2TouchPadBase::receiveMessage));
-                _messageHandlerInstalled = true;
-            }
+
             
+    
             break;
+        }
     }
 }
 
