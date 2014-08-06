@@ -140,8 +140,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wsticky=0;
 	tapstable=1;
 	wlimit=9;
-	wvdivisor=30;
-	whdivisor=30;
+	wvdivisor=20;//30
+	whdivisor=20;//30
 	clicking=true;
 	dragging=true;
 	draglock=false;

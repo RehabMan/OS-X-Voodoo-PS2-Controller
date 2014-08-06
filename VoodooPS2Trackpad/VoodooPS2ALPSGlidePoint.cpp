@@ -272,8 +272,8 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     hscroll = vscroll = false;
     vscrolldivisor = 0;
     hscrolldivisor = 0;
-    divisorx = 40;
-    divisory = 40;
+    divisorx = 17;
+    divisory = 17;
     hscrolldivisor = 50;
     vscrolldivisor = 50;
     _buttonCount = 3;
@@ -815,9 +815,9 @@ void ApplePS2ALPSGlidePoint::processPacketV6SingleTouch(UInt8 *packet) {
 	raw_buttons |= middle ? 0x04 : 0;
 
 	// Sometimes, a big value can spit out, so we must remove it...
-	//    if ((abs(x) >= 0x7f) && (abs(y) >= 0x7f)) {
-	//        x = y = 0;
-	//    }
+	    if ( x == 0x7F && y  == 0x7F && z == 0x7F) {
+	        x = y = z = 0;
+	    }
 	// Button status can appear in normal packet...
 	if (0 == raw_buttons) {
 		buttons = lastbuttons;

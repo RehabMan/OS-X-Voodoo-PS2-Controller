@@ -184,10 +184,10 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     
     momentumscroll = true;
     scrollTimer = 0;
-    momentumscrolltimer = 10000000;
+    momentumscrolltimer = 10000000; //10000000
     momentumscrollthreshy = 7;
-    momentumscrollmultiplier = 98;
-    momentumscrolldivisor = 100;
+    momentumscrollmultiplier = 98;//98
+    momentumscrolldivisor = 100;//100
     momentumscrollsamplesmin = 3;
     momentumscrollcurrent_y = 0;
     momentumscrollcurrent_x = 0;
@@ -441,7 +441,7 @@ void VoodooPS2TouchPadBase::onScrollTimer(void)
     int64_t dy64 = momentumscrollcurrent_y / (int64_t)momentumscrollinterval + momentumscrollrest2_y;
     int64_t dx64 = momentumscrollcurrent_x / (int64_t)momentumscrollinterval + momentumscrollrest2_x;
     int dx = (int) dx64;
-    int dy = (int)dy64;
+    int dy = (int) dy64;
     if (abs(dy) > momentumscrollthreshy || abs(dx) > momentumscrollthreshy)
     {
         // dispatch the scroll event
