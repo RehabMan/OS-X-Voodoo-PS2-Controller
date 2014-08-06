@@ -1376,7 +1376,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 DEBUG_LOG("Ignore vscroll after typing\n");
                 break;
             }
-            dy = ((lasty - y) / (vscrolldivisor / 100.0));
+            dy = ((lasty - y) / (vscrolldivisor ));
             dy = yrest + dy;
 			if (abs(dy) < scrolldythresh) {
                 yrest = dy;
@@ -1399,7 +1399,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 DEBUG_LOG("ignore hscroll after typing\n");
                 break;
             }
-            dx = ((lastx - x) / (hscrolldivisor / 100.0));
+            dx = ((lastx - x) / (hscrolldivisor ));
             dx = xrest + dx;
 			if (abs(dx) < scrolldxthresh) {
                 xrest = dx;
