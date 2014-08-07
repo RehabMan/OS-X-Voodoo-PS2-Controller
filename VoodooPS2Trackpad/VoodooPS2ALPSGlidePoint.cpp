@@ -272,8 +272,8 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     hscroll = vscroll = false;
     divisorx = 20;
     divisory = 20;
-    hscrolldivisor = 120;
-    vscrolldivisor = 120;
+    hscrolldivisor = 10;
+    vscrolldivisor = 10;
     _buttonCount = 3;
     
 	scrolldxthresh = 0;
@@ -1266,7 +1266,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 //						DEBUG_LOG(
 //								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
 //								getName(), dy, dx );
-                        dispatchScrollWheelEventX(dy, dx, 0, now_abs);
+                        dispatchScrollWheelEventX(dy / vscrolldivisor, dx / hscrolldivisor, 0, now_abs);
                         dx = dy = 0;
                     }
                     break;
@@ -1383,7 +1383,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 yrest = 0;
             }
             DEBUG_LOG("VScroll: dy=%d\n", dy);
-			dispatchScrollWheelEventX( dy, dx, 0, now_abs );
+            dispatchScrollWheelEventX(dy / vscrolldivisor, dx / hscrolldivisor, 0, now_abs);
             dy = 0;
             break;
 
@@ -1406,7 +1406,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 xrest = 0;
             }
             DEBUG_LOG("HScroll: dx=%d\n", dx);
-			dispatchScrollWheelEventX( dy, dx, 0, now_abs );
+            dispatchScrollWheelEventX(dy / vscrolldivisor, dx / hscrolldivisor, 0, now_abs);
             dx = 0;
             break;
 
