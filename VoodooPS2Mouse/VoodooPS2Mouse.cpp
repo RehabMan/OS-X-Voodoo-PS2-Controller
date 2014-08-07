@@ -101,7 +101,7 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   scrollres                  = 10;
   actliketrackpad            = false;
   keytime                    = 0;
-  maxaftertyping             = 500000000;
+  maxaftertyping             = 250000000;
   buttonmask                 = ~0;
   scroll                     = true;
   noled                      = false;

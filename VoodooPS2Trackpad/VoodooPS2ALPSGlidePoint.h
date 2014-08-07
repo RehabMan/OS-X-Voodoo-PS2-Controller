@@ -32,6 +32,7 @@
 #define ALPS_PROTO_V3	3
 #define ALPS_PROTO_V4	4
 #define ALPS_PROTO_V5	5
+#define ALPS_PROTO_V6	6
 
 /**
  * struct alps_model_info - touchpad ID table
@@ -226,7 +227,13 @@ protected:
 
     bool getStatus(ALPSStatus_t *status);
 
+    ALPSStatus_t getE6Report();
+    ALPSStatus_t getE7Report();
+    ALPSStatus_t getECReport();
+
     virtual bool deviceSpecificInit();
+    virtual void afterInstallInterrupt();
+    virtual void afterDeviceUnlock();
 
     bool enterCommandMode();
 
@@ -254,11 +261,23 @@ protected:
     
     bool absoluteModeV4();
 
+    bool absoluteModeV6();
+
+    bool setAbsoluteModeNew();
+
     bool resetMouse();
 
     bool setSampleRateAndResolution(UInt8 rate, UInt8 res);
 
     void processPacketV3(UInt8 *packet);
+
+    void processPacketV6SingleTouch(UInt8 *packet);
+
+    void processPacketV6MultiTouch(UInt8 *packet);
+
+    void decodePacketV6(struct alps_fields *f, UInt8 *p);
+
+    void processPacketV6(UInt8 *packet);
 
     void processTrackstickPacketV3(UInt8 * packet);
 
@@ -272,6 +291,8 @@ protected:
 
     void setTouchPadEnable(bool enable);
     
+    void setTouchPadV6Enable(bool enable);
+
     void dispatchEventsWithInfo(int xraw, int yraw, int z, int fingers, UInt32 buttonsraw);
 
     void calculateMovement(int x, int y, int z, int fingers, int & dx, int & dy);
@@ -296,6 +317,8 @@ protected:
     
     bool hwInitV4();
     
+    bool hwInitV6_version2();
+
     IOReturn probeTrackstickV3(int regBase);
     
     IOReturn setupTrackstickV3(int regBase);

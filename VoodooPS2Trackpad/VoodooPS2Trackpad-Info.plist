@@ -207,7 +207,7 @@
 					<key>MaxDragTime</key>
 					<integer>180000000</integer>
 					<key>MaxTapTime</key>
-					<integer>130000000</integer>
+					<integer>100000000</integer>
 					<key>MultiFingerHorizontalDivisor</key>
 					<integer>1</integer>
 					<key>MultiFingerVerticalDivisor</key>
@@ -227,7 +227,7 @@
 					<key>ZLimit</key>
 					<integer>115</integer>
 					<key>QuietTimeAfterTyping</key>
-					<integer>500000000</integer>
+					<integer>250000000</integer>
 					<key>DisableLEDUpdating</key>
 					<false/>
 					<key>MouseMultiplierX</key>
@@ -287,9 +287,9 @@
 					<key>ScrollResolution</key>
 					<integer>2950</integer>
 					<key>SwipeDeltaX</key>
-					<integer>800</integer>
+					<integer>600</integer>
 					<key>SwipeDeltaY</key>
-					<integer>800</integer>
+					<integer>500</integer>
 					<key>MouseCount</key>
 					<integer>0</integer>
 					<key>USBMouseStopsTrackpad</key>
@@ -309,15 +309,15 @@
 					<key>DragLockTempMask</key>
 					<integer>1048592</integer>
 					<key>MomentumScrollThreshY</key>
-					<integer>7</integer>
+					<integer>2</integer>
 					<key>MomentumScrollTimer</key>
-					<integer>10000000</integer>
+					<integer>5000000</integer>
 					<key>MomentumScrollMultiplier</key>
 					<integer>98</integer>
 					<key>MomentumScrollDivisor</key>
 					<integer>100</integer>
 					<key>MomentumScrollSamplesMin</key>
-					<integer>3</integer>
+					<integer>1</integer>
 					<key>ClickPadClickTime</key>
 					<integer>300000000</integer>
 					<key>ClickPadTrackBoth</key>
@@ -325,9 +325,9 @@
 					<key>FingerChangeIgnoreDeltas</key>
 					<integer>3</integer>
 					<key>BogusDeltaThreshX</key>
-					<integer>400</integer>
+					<integer>700</integer>
 					<key>BogusDeltaThreshY</key>
-					<integer>350</integer>
+					<integer>500</integer>
 					<key>UnitsPerMMX</key>
 					<integer>50</integer>
 					<key>UnitsPerMMY</key>
@@ -337,9 +337,9 @@
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
 					<key>ScrollDeltaThreshX</key>
-					<integer>10</integer>
+					<integer>5</integer>
 					<key>ScrollDeltaThreshY</key>
-					<integer>10</integer>
+					<integer>5</integer>
 					<key>DragExitDelayTime</key>
 					<integer>1000000000</integer>
 				</dict>

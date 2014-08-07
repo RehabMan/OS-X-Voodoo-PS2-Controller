@@ -16,6 +16,8 @@
 //
 
 #define kPacketLength 6
+#define BYTETOBINARYPATTERN "%d%d%d%d %d%d%d%d"
+#define BYTETOBINARY(byte)  (byte & 0x80 ? 1 : 0), (byte & 0x40 ? 1 : 0),   (byte & 0x20 ? 1 : 0),   (byte & 0x10 ? 1 : 0),  (byte & 0x08 ? 1 : 0), (byte & 0x04 ? 1 : 0),   (byte & 0x02 ? 1 : 0),  (byte & 0x01 ? 1 : 0)
 
 class EXPORT VoodooPS2TouchPadBase : public IOHIPointing
 {
@@ -94,6 +96,7 @@ protected:
 
     // state related to secondary packets/extendedwmode
     int lastx2, lasty2;
+    bool touchpadEnable = false;
     bool tracksecondary;
     int xrest2, yrest2;
     bool clickedprimary;
@@ -147,17 +150,22 @@ protected:
     // momentum scroll state
     bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
+    SimpleAverage<int, 32> dx_history;
     SimpleAverage<uint64_t, 32> time_history;
     IOTimerEventSource* scrollTimer;
     uint64_t momentumscrolltimer;
     int momentumscrollthreshy;
     uint64_t momentumscrollinterval;
-    int momentumscrollsum;
-    int64_t momentumscrollcurrent;
-    int64_t momentumscrollrest1;
+    int momentumscrollsum_y;
+    int momentumscrollsum_x;
+    int64_t momentumscrollcurrent_y;
+    int64_t momentumscrollcurrent_x;
+    int64_t momentumscrollrest1_x;
+    int64_t momentumscrollrest1_y;
     int momentumscrollmultiplier;
     int momentumscrolldivisor;
-    int momentumscrollrest2;
+    int momentumscrollrest2_x;
+    int momentumscrollrest2_y;
     int momentumscrollsamplesmin;
 
     // timer for drag delay
@@ -238,6 +246,8 @@ protected:
 	virtual IOItemCount buttonCount();
 	virtual IOFixed     resolution();
     virtual bool deviceSpecificInit() = 0;
+    virtual void afterInstallInterrupt(){};
+    virtual void afterDeviceUnlock(){};
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)

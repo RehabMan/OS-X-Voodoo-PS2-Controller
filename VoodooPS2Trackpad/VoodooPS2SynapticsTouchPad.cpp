@@ -127,8 +127,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	redge=5200;
 	tedge=4200;
 	bedge=1700;
-	vscrolldivisor=30;
-	hscrolldivisor=30;
+	vscrolldivisor=5;
+	hscrolldivisor=5;
 	cscrolldivisor=0;
 	ctrigger=0;
 	centerx=3000;
@@ -140,8 +140,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wsticky=0;
 	tapstable=1;
 	wlimit=9;
-	wvdivisor=30;
-	whdivisor=30;
+	wvdivisor=5;//30
+	whdivisor=5;//30
 	clicking=true;
 	dragging=true;
 	draglock=false;
@@ -151,7 +151,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
     noled = false;
-    maxaftertyping = 500000000;
+    maxaftertyping = 250000000;
     mousemultiplierx = 20;
     mousemultipliery = 20;
     mousescrollmultiplierx = 20;
@@ -168,7 +168,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = swipedy = 800;
+    swipedx = swipedy = 600;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
     _buttonCount = 2;
@@ -177,11 +177,11 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadclicktime = 300000000; // 300ms default
     clickpadtrackboth = true;
     
-    bogusdxthresh = 400;
-    bogusdythresh = 350;
+    bogusdxthresh = 700;
+    bogusdythresh = 500;
     
-    scrolldxthresh = 10;
-    scrolldythresh = 10;
+    scrolldxthresh = 0;
+    scrolldythresh = 0;
     
     immediateclick = true;
 
@@ -237,12 +237,13 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     momentumscroll = true;
     scrollTimer = 0;
-    momentumscrolltimer = 10000000;
-    momentumscrollthreshy = 7;
+    momentumscrolltimer = 5000000;/10
+    momentumscrollthreshy = 2;
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
-    momentumscrollsamplesmin = 3;
-    momentumscrollcurrent = 0;
+    momentumscrollsamplesmin = 1;
+    momentumscrollcurrent_y = 0;
+    momentumscrollcurrent_x = 0;
     
     dragexitdelay = 100000000;
     dragTimer = 0;
@@ -460,6 +461,15 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
 #endif
 }
+
+
+void ApplePS2SynapticsTouchPad::afterInstallInterrupt(){
+    }
+void ApplePS2SynapticsTouchPad::afterDeviceUnlock(){
+
+}
+
+
 
 bool ApplePS2SynapticsTouchPad::deviceSpecificInit()
 {
@@ -1188,29 +1198,42 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		untouchtime=now_ns;
         tracksecondary=false;
         
-#ifdef DEBUG_VERBOSE
-        if (dy_history.count())
-            IOLog("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest()-time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
-        else
-            IOLog("ps2: no time/dy history\n");
-#endif
+        if (dy_history.count() || dx_history.count()) {
+			DEBUG_LOG(
+					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
+					time_history.newest(), time_history.oldest(),
+					time_history.newest() - time_history.oldest(),
+					dy_history.sum(), dy_history.count(), dy_history.average(),
+					dx_history.sum(), dx_history.count(),
+					dx_history.average() );
+		} else {
+			DEBUG_LOG( "ps2: no time/dy history\n" );
+		}
         
         // check for scroll momentum start
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
         {
             // releasing when we were in touchmode -- check for momentum scroll
-            if (dy_history.count() > momentumscrollsamplesmin &&
-                (momentumscrollinterval = time_history.newest() - time_history.oldest()))
-            {
-                momentumscrollsum = dy_history.sum();
-                momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
-                momentumscrollrest1 = 0;
-                momentumscrollrest2 = 0;
+			if (( dy_history.count() > momentumscrollsamplesmin
+					|| dx_history.count() > momentumscrollsamplesmin )
+					&& ( momentumscrollinterval = time_history.newest()
+							- time_history.oldest() )) {
+				momentumscrollsum_y = dy_history.sum();
+				momentumscrollsum_x = dx_history.sum();
+				momentumscrollcurrent_y = momentumscrolltimer
+						* -momentumscrollsum_y;
+				momentumscrollcurrent_x = momentumscrolltimer
+						* -momentumscrollsum_x;
+				momentumscrollrest1_x = 0;
+				momentumscrollrest1_y = 0;
+				momentumscrollrest2_x = 0;
+				momentumscrollrest2_y = 0;
                 setTimerTimeout(scrollTimer, momentumscrolltimer);
             }
         }
         time_history.reset();
         dy_history.reset();
+        dx_history.reset();
         DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
 		if (now_ns-touchtime < maxtaptime && clicking)
         {
@@ -1350,6 +1373,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (!wsticky && w<=wlimit && w>3)
                     {
                         dy_history.reset();
+                        dx_history.reset();
                         time_history.reset();
                         clickedprimary = _clickbuttons;
                         tracksecondary=false;
@@ -1363,18 +1387,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     yrest = (wvdivisor) ? dy % wvdivisor : 0;
                     xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
                     // check for stopping or changing direction
-                    if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
-                    {
+					if (( ( dy < 0 ) != ( dy_history.newest() < 0 ) || dy == 0 )
+							|| ( ( dx < 0 ) != ( dx_history.newest() < 0 )
+									|| dx == 0 )) {
                         // stopped or changed direction, clear history
                         dy_history.reset();
+						dx_history.reset();
                         time_history.reset();
                     }
                     // put movement and time in history for later
                     dy_history.filter(dy);
-                    time_history.filter(now_ns);
+					dx_history.filter( dx );
                     //REVIEW: filter out small movements (Mavericks issue)
-                    if (abs(dx) < scrolldxthresh)
-                    {
+					if (abs(dx) < scrolldxthresh) {
                         xrest = dx;
                         dx = 0;
                     }
@@ -1519,7 +1544,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (isFingerTouch(z))
     {
         // taps don't count if too close to typing or if currently in momentum scroll
-        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent)
+        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && (!momentumscrollcurrent_y||!momentumscrollcurrent_x))
         {
             if (!isTouchMode())
             {
@@ -1534,7 +1559,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 wastriple = true;
         }
         // any touch cancels momentum scroll
-        momentumscrollcurrent = 0;
+        momentumscrollcurrent_x = 0;
+        momentumscrollcurrent_y = 0;
     }
 
     // switch modes, depending on input
