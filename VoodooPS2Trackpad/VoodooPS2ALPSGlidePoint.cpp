@@ -272,8 +272,8 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     hscroll = vscroll = false;
     divisorx = 20;
     divisory = 20;
-    hscrolldivisor = 10;
-    vscrolldivisor = 10;
+    hscrolldivisor = 5;
+    vscrolldivisor = 5;
     _buttonCount = 3;
     
 	scrolldxthresh = 0;

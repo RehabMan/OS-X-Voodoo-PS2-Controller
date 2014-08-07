@@ -311,7 +311,7 @@
 					<key>MomentumScrollThreshY</key>
 					<integer>2</integer>
 					<key>MomentumScrollTimer</key>
-					<integer>10000000</integer>
+					<integer>5000000</integer>
 					<key>MomentumScrollMultiplier</key>
 					<integer>98</integer>
 					<key>MomentumScrollDivisor</key>

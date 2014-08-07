@@ -86,8 +86,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
 	wsticky=0;
 	tapstable=1;
 	wlimit=9;
-	wvdivisor=30;
-	whdivisor=30;
+	wvdivisor=5;
+	whdivisor=5;
 	clicking=true;
 	dragging=true;
 	draglock=false;
@@ -184,7 +184,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     
     momentumscroll = true;
     scrollTimer = 0;
-    momentumscrolltimer = 10000000; //10000000
+    momentumscrolltimer = 5000000; //10000000
     momentumscrollthreshy = 7;
     momentumscrollmultiplier = 98;//98
     momentumscrolldivisor = 100;//100

@@ -127,8 +127,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	redge=5200;
 	tedge=4200;
 	bedge=1700;
-	vscrolldivisor=30;
-	hscrolldivisor=30;
+	vscrolldivisor=5;
+	hscrolldivisor=5;
 	cscrolldivisor=0;
 	ctrigger=0;
 	centerx=3000;
@@ -140,8 +140,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wsticky=0;
 	tapstable=1;
 	wlimit=9;
-	wvdivisor=20;//30
-	whdivisor=20;//30
+	wvdivisor=5;//30
+	whdivisor=5;//30
 	clicking=true;
 	dragging=true;
 	draglock=false;
@@ -237,7 +237,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     momentumscroll = true;
     scrollTimer = 0;
-    momentumscrolltimer = 10000000;
+    momentumscrolltimer = 5000000;/10
     momentumscrollthreshy = 2;
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
