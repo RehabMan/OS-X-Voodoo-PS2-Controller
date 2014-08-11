@@ -1200,12 +1200,10 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             if (MODE_DRAGLOCK == touchmode || (!immediateclick || now_ns - touchtime > maxdbltaptime)) {
                 buttons |= 0x1;
             }
-//            calculateMovement(x, y, z, fingers, dx, dy);
-//            if (abs(dx)>10 || abs(dy)>10){
-//                buttons &= 0xfe; //reset mouse drag if click wasnt in aproximatly same place
-//            }
-//            break;
-            // no fall  through
+            calculateMovement(x, y, z, fingers, dx, dy);
+            if (abs(dx)>10 || abs(dy)>10){
+                buttons &= 0xfe; //reset mouse drag if click wasnt in aproximatly same place
+            }
         case MODE_MOVE:
             calculateMovement(x, y, z, fingers, dx, dy);
             break;
@@ -1217,7 +1215,14 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     // transition from multitouch to single touch
                     // continue moving with the primary finger
 //                    DEBUG_LOG("Transition from multitouch to single touch and move\n");
-                    calculateMovement(x, y, z, fingers, dx, dy);
+
+                    if (last_fingers==2){
+                        dx=0;dy=0;
+                    }else{
+                        calculateMovement(x, y, z, fingers, dx, dy);
+                    }
+                    if (last_fingers>1)
+                        multiTouchTransitionToSingleTouch=true;
                     break;
                 case 2: // two finger
                     if (last_fingers != fingers) {
@@ -1263,6 +1268,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                         } else {
                             yrest = 0;
                         }
+                        last2FingersTouchTime = now_abs;
+                        multiTouchTransitionToSingleTouch=false;
+                        
 //						DEBUG_LOG(
 //								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
 //								getName(), dy, dx );
@@ -1274,6 +1282,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 case 3: // three finger
                     // Calculate movement since last interrupt
                     calculateMovement(x, y, z, fingers, dx, dy);
+                    multiTouchTransitionToSingleTouch=false;
                     // Now calculate total movement since 3 fingers down (add to total)
                     xmoved += dx;
                     ymoved += dy;
@@ -1320,6 +1329,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 case 4: // four fingers
                     // Calculate movement since last interrupt
                     calculateMovement(x, y, z, fingers, dx, dy);
+                    multiTouchTransitionToSingleTouch=false;
                     // Now calculate total movement since 4 fingers down (add to total)
                     xmoved += dx;
                     ymoved += dy;
@@ -1466,8 +1476,11 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
         }
         // any touch cancels momentum scroll
-		momentumscrollcurrent_x = 0;
-		momentumscrollcurrent_y = 0;
+        if ((fingers == 1 && multiTouchTransitionToSingleTouch == true && (now_abs - last2FingersTouchTime >= maxdragtime))
+            || ( fingers != 1) ){
+            momentumscrollcurrent_x = 0;
+            momentumscrollcurrent_y = 0;
+        }
     }
 
     // switch modes, depending on input
