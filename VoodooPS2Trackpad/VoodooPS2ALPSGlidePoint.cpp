@@ -1086,7 +1086,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         }
 
         // check for scroll momentum start
-        if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
+        if ( (MODE_MTOUCH == touchmode || (multiTouchTransitionToSingleTouch == true &&(now_abs-last2FingersTouchTime>maxdragtime)) )&& momentumscroll && momentumscrolltimer) {
             // releasing when we were in touchmode -- check for momentum scroll
 			if ((dy_history.count() > momentumscrollsamplesmin || dx_history.count()> momentumscrollsamplesmin  )
 					&& ( momentumscrollinterval = time_history.newest()
@@ -1216,13 +1216,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     // continue moving with the primary finger
 //                    DEBUG_LOG("Transition from multitouch to single touch and move\n");
 
-                    if (last_fingers==2){
-                        dx=0;dy=0;
-                    }else{
-                        calculateMovement(x, y, z, fingers, dx, dy);
-                    }
+
+                    calculateMovement(x, y, z, fingers, dx, dy);
                     if (last_fingers>1)
                         multiTouchTransitionToSingleTouch=true;
+                    if (now_abs - last2FingersTouchTime >= maxdragtime){
+                        multiTouchTransitionToSingleTouch=false;
+                    }
                     break;
                 case 2: // two finger
                     if (last_fingers != fingers) {
