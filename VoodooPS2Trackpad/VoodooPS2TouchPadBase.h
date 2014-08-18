@@ -110,7 +110,6 @@ protected:
     int touchx, touchy;
 	uint64_t touchtime;
    	uint64_t last2FingersTouchTime;
-    bool multiTouchTransitionToSingleTouch=false;
 	uint64_t untouchtime;
 	bool wasdouble,wastriple;
     uint64_t keytime;

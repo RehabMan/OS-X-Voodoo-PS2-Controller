@@ -1086,7 +1086,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         }
 
         // check for scroll momentum start
-        if ( (MODE_MTOUCH == touchmode || (multiTouchTransitionToSingleTouch == true &&(now_abs-last2FingersTouchTime>maxdragtime)) )&& momentumscroll && momentumscrolltimer) {
+        if ( (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
             // releasing when we were in touchmode -- check for momentum scroll
 			if ((dy_history.count() > momentumscrollsamplesmin || dx_history.count()> momentumscrollsamplesmin  )
 					&& ( momentumscrollinterval = time_history.newest()
@@ -1208,6 +1208,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             calculateMovement(x, y, z, fingers, dx, dy);
             break;
 
+            if (now_abs-last2FingersTouchTime < maxdragtime ){
+                fingers = last_fingers;
+            }
         case MODE_MTOUCH:
 //            DEBUG_LOG("detected multitouch with fingers=%d\n", fingers);
             switch (fingers) {
@@ -1218,11 +1221,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
 
                     calculateMovement(x, y, z, fingers, dx, dy);
-                    if (last_fingers>1)
-                        multiTouchTransitionToSingleTouch=true;
-                    if (now_abs - last2FingersTouchTime >= maxdragtime){
-                        multiTouchTransitionToSingleTouch=false;
-                    }
                     break;
                 case 2: // two finger
                     if (last_fingers != fingers) {
@@ -1269,7 +1267,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                             yrest = 0;
                         }
                         last2FingersTouchTime = now_abs;
-                        multiTouchTransitionToSingleTouch=false;
                         
 //						DEBUG_LOG(
 //								"%s::dispatchScrollWheelEventX: dv=%d, dh=%d\n",
@@ -1282,7 +1279,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 case 3: // three finger
                     // Calculate movement since last interrupt
                     calculateMovement(x, y, z, fingers, dx, dy);
-                    multiTouchTransitionToSingleTouch=false;
                     // Now calculate total movement since 3 fingers down (add to total)
                     xmoved += dx;
                     ymoved += dy;
@@ -1329,7 +1325,6 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                 case 4: // four fingers
                     // Calculate movement since last interrupt
                     calculateMovement(x, y, z, fingers, dx, dy);
-                    multiTouchTransitionToSingleTouch=false;
                     // Now calculate total movement since 4 fingers down (add to total)
                     xmoved += dx;
                     ymoved += dy;
@@ -1476,11 +1471,10 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
         }
         // any touch cancels momentum scroll
-        if ((fingers == 1 && multiTouchTransitionToSingleTouch == true && (now_abs - last2FingersTouchTime >= maxdragtime))
-            || ( fingers != 1) ){
-            momentumscrollcurrent_x = 0;
-            momentumscrollcurrent_y = 0;
-        }
+
+        momentumscrollcurrent_x = 0;
+        momentumscrollcurrent_y = 0;
+
     }
 
     // switch modes, depending on input
@@ -1502,38 +1496,38 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         tracksecondary = false;
     }
 
-    if (scroll && cscrolldivisor) {
-        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && (ctrigger == 1 || ctrigger == 9))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && x > redge && (ctrigger == 2))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && (ctrigger == 3 || ctrigger == 9))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && y < bedge && (ctrigger == 4))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && (ctrigger == 5 || ctrigger == 9))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && x < ledge && (ctrigger == 6))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && (ctrigger == 7 || ctrigger == 9))
-            touchmode = MODE_CSCROLL;
-        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && y > tedge && (ctrigger == 8))
-            touchmode = MODE_CSCROLL;
-
-        DEBUG_LOG("new touchmode=%d\n", touchmode);
-    }
-    if ((MODE_NOTOUCH == touchmode || (MODE_HSCROLL == touchmode && y >= bedge)) &&
-            z > z_finger && x > redge && vscrolldivisor && vscroll) {
-        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d, vscrolldivisor=%d, scroll=%d\n", redge, bedge, vscrolldivisor, scroll);
-        touchmode = MODE_VSCROLL;
-        scrollrest = 0;
-    }
-    if ((MODE_NOTOUCH == touchmode || (MODE_VSCROLL == touchmode && x <= redge)) &&
-            z > z_finger && y > bedge && hscrolldivisor && hscroll && vscroll) {
-        DEBUG_LOG("switch to hscroll touchmode\n");
-        touchmode = MODE_HSCROLL;
-        scrollrest = 0;
-    }
+//    if (scroll && cscrolldivisor) {
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && (ctrigger == 1 || ctrigger == 9))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && y > tedge && x > redge && (ctrigger == 2))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && (ctrigger == 3 || ctrigger == 9))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && x > redge && y < bedge && (ctrigger == 4))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && (ctrigger == 5 || ctrigger == 9))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && y < bedge && x < ledge && (ctrigger == 6))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && (ctrigger == 7 || ctrigger == 9))
+//            touchmode = MODE_CSCROLL;
+//        if (touchmode == MODE_NOTOUCH && z > z_finger && x < ledge && y > tedge && (ctrigger == 8))
+//            touchmode = MODE_CSCROLL;
+//
+//        DEBUG_LOG("new touchmode=%d\n", touchmode);
+//    }
+//    if ((MODE_NOTOUCH == touchmode || (MODE_HSCROLL == touchmode && y >= bedge)) &&
+//            z > z_finger && x > redge && vscrolldivisor && vscroll) {
+//        DEBUG_LOG("switch to vscroll touchmode redge=%d, bedge=%d, vscrolldivisor=%d, scroll=%d\n", redge, bedge, vscrolldivisor, scroll);
+//        touchmode = MODE_VSCROLL;
+//        scrollrest = 0;
+//    }
+//    if ((MODE_NOTOUCH == touchmode || (MODE_VSCROLL == touchmode && x <= redge)) &&
+//            z > z_finger && y > bedge && hscrolldivisor && hscroll && vscroll) {
+//        DEBUG_LOG("switch to hscroll touchmode\n");
+//        touchmode = MODE_HSCROLL;
+//        scrollrest = 0;
+//    }
     if (touchmode == MODE_NOTOUCH && z > z_finger) {
         touchmode = MODE_MOVE;
     }
