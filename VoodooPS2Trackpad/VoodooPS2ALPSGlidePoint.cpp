@@ -1086,7 +1086,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         }
 
         // check for scroll momentum start
-        if ( (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
+        if ( MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer) {
             // releasing when we were in touchmode -- check for momentum scroll
 			if ((dy_history.count() > momentumscrollsamplesmin || dx_history.count()> momentumscrollsamplesmin  )
 					&& ( momentumscrollinterval = time_history.newest()
