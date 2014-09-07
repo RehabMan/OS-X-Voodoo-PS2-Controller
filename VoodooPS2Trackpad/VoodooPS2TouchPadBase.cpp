@@ -105,8 +105,8 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
-    tapthreshx = tapthreshy = 50;
-    dblthreshx = dblthreshy = 100;
+    tapthreshx = tapthreshy = 10;//50
+    dblthreshx = dblthreshy = 50;//100
     zonel = 1700;  zoner = 5200;
     zonet = 99999; zoneb = 0;
     diszl = 0; diszr = 1700;
@@ -188,7 +188,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     momentumscrollthreshy = 7;
     momentumscrollmultiplier = 98;//98
     momentumscrolldivisor = 100;//100
-    momentumscrollsamplesmin = 3;
+    momentumscrollsamplesmin = 1;
     momentumscrollcurrent_y = 0;
     momentumscrollcurrent_x = 0;
     
@@ -745,7 +745,7 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"MaxDragTime",                     &maxdragtime},
-        {"",                      &maxtaptime},
+        {"MaxTapTime",                      &maxtaptime},
         {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
         {"MomentumScrollTimer",             &momentumscrolltimer},

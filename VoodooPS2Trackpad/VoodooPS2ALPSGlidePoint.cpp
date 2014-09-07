@@ -1226,15 +1226,9 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
                     if (last_fingers != fingers) {
                         break;
                     }
-                    if (palm && z > zlimit) {
-                        break;
-                    }
-                    if (palm_wt && now_ns - keytime < maxaftertyping) {
-                        break;
-                    }
                     calculateMovement(x, y, z, fingers, dx, dy);
-                    dx = dx * abs(dx)/20;
-                    dy = dy * abs(dy)/20;
+                    dx = dx * abs(dx) / divisorx;
+                    dy = dy * abs(dy) / divisory;
                     // check for stopping or changing direction
 					if ((( dy < 0 ) != ( dy_history.newest() < 0 ) || dy == 0) ||
 					(( dx < 0 ) != ( dx_history.newest() < 0 ) || dx == 0)) {
@@ -1471,7 +1465,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
             }
         }
         // any touch cancels momentum scroll
-
+        
         momentumscrollcurrent_x = 0;
         momentumscrollcurrent_y = 0;
 

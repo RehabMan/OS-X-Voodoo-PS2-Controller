@@ -133,7 +133,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	ctrigger=0;
 	centerx=3000;
 	centery=3000;
-	maxtaptime  =130000000;
+	maxtaptime  =100000000; //130000000
 	maxdragtime =230000000;
 	hsticky=0;
 	vsticky=0;
@@ -159,8 +159,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
-    tapthreshx = tapthreshy = 50;
-    dblthreshx = dblthreshy = 100;
+    tapthreshx = tapthreshy = 10;//50
+    dblthreshx = dblthreshy = 50;//100
     zonel = 1700;  zoner = 5200;
     zonet = 99999; zoneb = 0;
     diszl = 0; diszr = 1700;

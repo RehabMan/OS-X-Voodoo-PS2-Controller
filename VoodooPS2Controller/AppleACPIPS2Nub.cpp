@@ -206,7 +206,7 @@ IOReturn AppleACPIPS2Nub::getResources( void )
 
 IOReturn AppleACPIPS2Nub::message( UInt32 type, IOService *provider, void *argument )
 {
-    ////DEBUG_LOG("AppleACPIPS2Nub::message: type=%x, provider=%p, argument=%p\n", type, provider, argument);
+    DEBUG_LOG("AppleACPIPS2Nub::message: type=%x, provider=%p, argument=%p\n", type, provider, argument);
     
     // forward to all interested sub-entries
     IORegistryIterator *i = IORegistryIterator::iterateOver(this, gIOServicePlane, kIORegistryIterateRecursively);

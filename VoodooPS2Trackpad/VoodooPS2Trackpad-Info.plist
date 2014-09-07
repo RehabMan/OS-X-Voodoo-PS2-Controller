@@ -314,8 +314,6 @@
 					<integer>5000000</integer>
 					<key>MomentumScrollMultiplier</key>
 					<integer>98</integer>
-					<key>MomentumScrollDivisor</key>
-					<integer>100</integer>
 					<key>MomentumScrollSamplesMin</key>
 					<integer>1</integer>
 					<key>ClickPadClickTime</key>
