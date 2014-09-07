@@ -185,7 +185,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     momentumscroll = true;
     scrollTimer = 0;
     momentumscrolltimer = 5000000; //10000000
-    momentumscrollthreshy = 7;
+    momentumscrollthreshy = 1;
     momentumscrollmultiplier = 98;//98
     momentumscrolldivisor = 100;//100
     momentumscrollsamplesmin = 1;

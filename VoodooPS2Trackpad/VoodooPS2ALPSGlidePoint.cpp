@@ -1002,13 +1002,13 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
 
     if (last_fingers > 0 && fingers > 0 && last_fingers != fingers) {
-//        DEBUG_LOG("Start ignoring delta with finger change\n");
+        DEBUG_LOG("Start ignoring delta with finger change\n");
         // ignore deltas for a while after finger change
         ignoredeltas = ignoredeltasstart;
     }
 
     if (last_fingers != fingers) {
-//        DEBUG_LOG("Finger change, reset averages\n");
+        DEBUG_LOG("Finger change, reset averages\n");
         // reset averages after finger change
         x_undo.reset();
         y_undo.reset();
@@ -1031,7 +1031,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     }
 
     if (ignoredeltas) {
-//        DEBUG_LOG("Still ignoring deltas. Value=%d\n", ignoredeltas);
+        DEBUG_LOG("Still ignoring deltas. Value=%d\n", ignoredeltas);
         lastx = x;
         lasty = y;
         if (--ignoredeltas == 0) {
@@ -1045,7 +1045,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
     // deal with "OutsidezoneNoAction When Typing"
     if (outzone_wt && z > z_finger && now_ns - keytime < maxaftertyping &&
             (x < zonel || x > zoner || y < zoneb || y > zonet)) {
-//        DEBUG_LOG("Ignore touch input after typing\n");
+        DEBUG_LOG("Ignore touch input after typing\n");
         // touch input was shortly after typing and outside the "zone"
         // ignore it...
         return;
@@ -1053,7 +1053,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
     // if trackpad input is supposed to be ignored, then don't do anything
     if (ignoreall) {
-//        DEBUG_LOG("ignoreall is set, returning\n");
+        DEBUG_LOG("ignoreall is set, returning\n");
         return;
     }
 
@@ -1063,7 +1063,7 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
 
     if (z < z_finger && isTouchMode()) {
         // Finger has been lifted
-//        DEBUG_LOG("finger lifted after touch\n");
+        DEBUG_LOG("finger lifted after touch\n");
         xrest = yrest = scrollrest = 0;
         inSwipeLeft = inSwipeRight = inSwipeUp = inSwipeDown = 0;
         inSwipe4Left = inSwipe4Right = inSwipe4Up = inSwipe4Down = 0;
@@ -1072,17 +1072,17 @@ void ApplePS2ALPSGlidePoint::dispatchEventsWithInfo(int xraw, int yraw, int z, i
         tracksecondary = false;
 
 		if (dy_history.count() || dx_history.count()) {
-//			DEBUG_LOG(
-//					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
-//					time_history.newest(), time_history.oldest(),
-//					time_history.newest() - time_history.oldest(),
-//					dy_history.sum(), dy_history.count(),
-//					dy_history.average(),
-//					dx_history.sum(), dx_history.count(),
-//					dx_history.average()
-//			);
+			DEBUG_LOG(
+					"ps2: newest=%llu, oldest=%llu, diff=%llu, avg_y: %d/%d=%d , avg_x:%d/%d=%d\n",
+					time_history.newest(), time_history.oldest(),
+					time_history.newest() - time_history.oldest(),
+					dy_history.sum(), dy_history.count(),
+					dy_history.average(),
+					dx_history.sum(), dx_history.count(),
+					dx_history.average()
+			);
 		} else {
-//            DEBUG_LOG("ps2: no time/dy history\n");
+            DEBUG_LOG("ps2: no time/dy history\n");
         }
 
         // check for scroll momentum start

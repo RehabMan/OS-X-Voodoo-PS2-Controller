@@ -177,12 +177,12 @@ error:
 #ifdef DEBUG
 static void logKeySequence(const char* header, UInt16* pAction)
 {
-  //  DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
+    DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
     for (; *pAction; ++pAction)
     {
-    //    DEBUG_LOG("%04x, ", *pAction);
+       DEBUG_LOG("%04x, ", *pAction);
     }
-    //DEBUG_LOG("}\n");
+    DEBUG_LOG("}\n");
 }
 #endif
 
@@ -1135,10 +1135,10 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
 
 PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2InterruptAction
 {
-    ////IOLog("ps2interrupt: scanCode = %02x\n", data);
-    ////uint64_t time;
-    ////clock_get_uptime(&time);
-    ////IOLog("ps2interrupt(%lld): scanCode = %02x\n", time, data);
+//    IOLog("ps2interrupt: scanCode = %02x\n", data);
+//    uint64_t time;
+//    clock_get_uptime(&time);
+//    IOLog("ps2interrupt(%lld): scanCode = %02x\n", time, data);
     
     //
     // This will be invoked automatically from our device when asynchronous
@@ -1537,9 +1537,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     UInt8 extended = packet[0] - 1;
     UInt8 scanCode = packet[1];
 
-#ifdef DEBUG_VERBOSE
+
     DEBUG_LOG("%s: PS/2 scancode %s 0x%x\n", getName(),  extended ? "extended" : "", scanCode);
-#endif
+
     
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
     bool goingDown = !(scanCode & kSC_UpBit);
@@ -1573,10 +1573,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         // Allow PS2 -> PS2 map to work, look in normal part of the table
         keyCode = _PS2ToPS2Map[keyCodeRaw];
         
-#ifdef DEBUG_VERBOSE
+
         if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0x%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
-#endif
+
     }
     else
     {
@@ -1584,10 +1584,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         keyCodeRaw += KBV_NUM_SCANCODES;
         keyCode = _PS2ToPS2Map[keyCodeRaw];
         
-#ifdef DEBUG_VERBOSE
+
         if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0xe0%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
-#endif
+
         // handle special cases
         switch (keyCodeRaw)
         {
@@ -1773,12 +1773,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             break;
     }
 
-#ifdef DEBUG_VERBOSE
+
     if (adbKeyCode == DEADKEY && 0 != keyCode)
         DEBUG_LOG("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
     else
         DEBUG_LOG("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
-#endif
+
     
 #ifdef DEBUG_LITE
     int logscancodes = 1;
@@ -1787,10 +1787,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
     if (logscancodes==2 || (logscancodes==1 && goingDown))
     {
-//        if (keyCode == keyCodeRaw)
-//            IOLog("%s: sending key %x=%x %s\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
-//        else
-//            IOLog("%s: sending key %x=%x, %x=%x %s\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
+        if (keyCode == keyCodeRaw)
+            IOLog("%s: sending key %x=%x %s\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
+        else
+            IOLog("%s: sending key %x=%x, %x=%x %s\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
     }
     
     // allow mouse/trackpad driver to have time of last keyboard activity

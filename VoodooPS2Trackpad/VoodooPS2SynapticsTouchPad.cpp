@@ -238,7 +238,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     momentumscroll = true;
     scrollTimer = 0;
     momentumscrolltimer = 5000000;/10
-    momentumscrollthreshy = 2;
+    momentumscrollthreshy = 1;
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
     momentumscrollsamplesmin = 1;
