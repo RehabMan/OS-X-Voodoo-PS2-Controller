@@ -456,6 +456,78 @@
 						<key>ActionSwipeDown</key>
 						<string>63 d, 63 u</string>
 					</dict>
+                    <key>XPS13</key>
+                    <dict>
+                        <key>ActionSwipeDown</key>
+                        <string>3b d, 7d d, 7d u, 3b u</string>
+                        <key>ActionSwipeUp</key>
+                        <string>3b d, 7e d, 7e u, 3b u</string>
+                        <key>Breakless PS2</key>
+                        <array>
+                            <string>e005</string>
+                            <string>e006</string>
+                        </array>
+                        <key>Function Keys Special</key>
+                        <array>
+                            <string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
+                            <string>e06e=e06e</string>
+                            <string>e008=e008</string>
+                            <string>e01e=e01e</string>
+                            <string>e005=e005</string>
+                            <string>e006=e006</string>
+                            <string>e00c=e00c</string>
+                            <string>;Fn+f7 no dedicated macro</string>
+                            <string>e010=e010</string>
+                            <string>e022=e022</string>
+                            <string>e019=e019</string>
+                            <string>e02e=e02e</string>
+                            <string>e030=e030</string>
+                            <string>;The following 12 items map fkeys to fkeys</string>
+                            <string>3b=3b</string>
+                            <string>3c=3c</string>
+                            <string>3d=3d</string>
+                            <string>3e=3e</string>
+                            <string>3f=3f</string>
+                            <string>40=40</string>
+                            <string>41=41</string>
+                            <string>42=42</string>
+                            <string>43=43</string>
+                            <string>44=44</string>
+                            <string>57=57</string>
+                            <string>58=58</string>
+                        </array>
+                        <key>Function Keys Standard</key>
+                        <array>
+                            <string>;The following 12 items map Fn+fkeys to fkeys</string>
+                            <string>e06e=3b</string>
+                            <string>e008=3c</string>
+                            <string>e01e=3d</string>
+                            <string>e005=3e</string>
+                            <string>e006=3f</string>
+                            <string>e00c=40</string>
+                            <string>;Fn+f7 no macro just regular f key</string>
+                            <string>e010=42</string>
+                            <string>e022=43</string>
+                            <string>e019=44</string>
+                            <string>e02e=57</string>
+                            <string>e030=58</string>
+                            <string>;The following 12 items map fkeys to Fn+fkeys</string>
+                            <string>3b=e06e</string>
+                            <string>3c=e008</string>
+                            <string>3d=e01e</string>
+                            <string>3e=e005</string>
+                            <string>3f=e006</string>
+                            <string>40=e00c</string>
+                            <string>41=41</string>
+                            <string>42=e010</string>
+                            <string>43=e022</string>
+                            <string>44=e019</string>
+                            <string>57=e02e</string>
+                            <string>58=e030</string>
+                        </array>
+                        <key>Note-Comment</key>
+                        <string>Profile for XPS 13 9333, based on SNB-CPT by TimeWalker.</string>
+                    </dict>
 				</dict>
 				<key>Intel</key>
 				<dict>
