@@ -249,7 +249,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.11 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 2.8.15 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     
@@ -921,9 +921,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
-        // New lenvo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
+        // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
-        UInt32 combinedButtons = passbuttons | (packet[0] & 0x3) | (packet[3] & 0x3);
+        // However for clickpads that would miss right clicks, so use the last clickbuttons that
+        // were saved.
+        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
@@ -2241,7 +2243,14 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         divisorx = 1;
     if (!divisory)
         divisory = 1;
+    
+    // bogusdeltathreshx/y = 0 is MAX_INT
+    if (!bogusdxthresh)
+        bogusdxthresh = 0x7FFFFFFF;
+    if (!bogusdythresh)
+        bogusdythresh = 0x7FFFFFFF;
 #endif
+
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
     // extendedwmode is optional, used automatically for ClickPads

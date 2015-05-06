@@ -811,6 +811,12 @@ void VoodooPS2TouchPadBase::setParamPropertiesGated(OSDictionary * config)
     if (!divisory)
         divisory = 1;
 
+    // bogusdeltathreshx/y = 0 is MAX_INT
+    if (!bogusdxthresh)
+        bogusdxthresh = 0x7FFFFFFF;
+    if (!bogusdythresh)
+        bogusdythresh = 0x7FFFFFFF;
+
 //REVIEW: this should be done maybe only when necessary...
     touchmode=MODE_NOTOUCH;
 

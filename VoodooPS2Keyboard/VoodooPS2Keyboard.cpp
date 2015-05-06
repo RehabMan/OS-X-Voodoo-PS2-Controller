@@ -31,6 +31,7 @@
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include <IOKit/IOTimerEventSource.h>
+#include "ApplePS2ToADBMap.h"
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
@@ -67,10 +68,18 @@ void* _org_rehabman_dontstrip_[] =
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
-#define kIgnoreBytes                        2 // first two bytes of macro data are ignored (always 0xffff)
-#define kOutputBytes                        2 // last two bytes of Macro Inversion are used to specify output
-#define kMinMacroInversion                  (kIgnoreBytes+4+kOutputBytes)
 #define kMaxMacroTime                       "MaximumMacroTime"
+
+// Definitions for Macro Inversion data format
+//REVIEW: This should really be defined as some sort of structure
+#define kIgnoreBytes            2 // first two bytes of macro data are ignored (always 0xffff)
+#define kOutputBytes            2 // two bytes of Macro Inversion are used to specify output
+#define kModifierBytes          4 // 4 bytes specify modifier key match criteria
+#define kOutputBytesOffset      (kIgnoreBytes+0)
+#define kModifierBytesOffset    (kIgnoreBytes+kOutputBytes+0)
+#define kPrefixBytes            (kIgnoreBytes+kOutputBytes+kModifierBytes)
+#define kSequenceBytesOffset    (kPrefixBytes+0)
+#define kMinMacroInversion      (kPrefixBytes+2)
 
 // Constants for other services to communicate with
 
@@ -254,7 +263,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     bzero(_keyBitVector, sizeof(_keyBitVector));
     
     // make separate copy of ADB translation table.
-    bcopy(PS2ToADBMapStock, _PS2ToADBMapMapped, sizeof(UInt8) * ADB_CONVERTER_LEN);
+    bcopy(PS2ToADBMapStock, _PS2ToADBMapMapped, sizeof(_PS2ToADBMapMapped));
     
     // Setup the PS2 -> PS2 scan code mapper
     for (int i = 0; i < countof(_PS2ToPS2Map); i++)
@@ -263,7 +272,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
         // first half of map is normal scan codes, second half is extended scan codes (e0)
         _PS2ToPS2Map[i] = i;
     }
-    bzero(_PS2flags, sizeof(_PS2flags));
+    bcopy(_PS2flagsStock, _PS2flags, sizeof(_PS2flags));
     
     // Setup default swipe actions
     parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
@@ -314,7 +323,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
             int max = 0;
             for (OSData** p = _macroInversion; *p; p++)
             {
-                int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes;
+                int length = (*p)->getLength()-kPrefixBytes;
                 if (length > max)
                     max = length;
             }
@@ -324,7 +333,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     }
     
     // now copy to our PS2ToADBMap -- working copy...
-    bcopy(_PS2ToADBMapMapped, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
+    bcopy(_PS2ToADBMapMapped, _PS2ToADBMap, sizeof(_PS2ToADBMap));
     
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
@@ -1126,6 +1135,24 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
                     dispatchKeyboardEventWithPacket(packet);
                 }
             }
+            if (3 == packet[0] || 4 == packet[0])
+            {
+                // code 3 and 4 indicate send both make and break
+                packet[0] -= 2;
+                clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet (make)
+                    dispatchKeyboardEventWithPacket(packet);
+                }
+                clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
+                packet[1] |= 0x80; // break code
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet (break)
+                    dispatchKeyboardEventWithPacket(packet);
+                }
+            }
         }
     }
     return kIOReturnSuccess;
@@ -1315,22 +1342,29 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
     // compare against macro inversions
     for (OSData** p = _macroInversion; *p; p++)
     {
-        int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes;
+        int length = (*p)->getLength()-kPrefixBytes;
         if (total <= length)
         {
-            const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy())+kIgnoreBytes;
-            if (compareMacro(_macroBuffer, data, buffered))
+            const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy());
+            if (compareMacro(_macroBuffer, data+kSequenceBytesOffset, buffered))
             {
                 if (total == length)
                 {
-                    // exact match causes macro inversion
-                    // grab bytes from macro definition
-                    _macroBuffer[0] = data[length+0];
-                    _macroBuffer[1] = data[length+1];
-                    // dispatch constructed packet (timestamp is stamp on first macro packet)
-                    dispatchKeyboardEventWithPacket(_macroBuffer);
-                    cancelTimer(_macroTimer);
-                    _macroCurrent = 0;
+                    // get modifier mask/compare from macro definition
+                    UInt16 mask = (static_cast<UInt16>(data[kModifierBytesOffset+0]) << 8) + data[kModifierBytesOffset+1];
+                    UInt16 compare = (static_cast<UInt16>(data[kModifierBytesOffset+2]) << 8) + data[kModifierBytesOffset+3];
+                    if ((0xFFFF == compare && (_PS2modifierState & mask)) || ((_PS2modifierState & mask) == compare))
+                    {
+                        // exact match causes macro inversion
+                        // grab bytes from macro definition
+                        _macroBuffer[0] = data[kOutputBytesOffset+0];
+                        _macroBuffer[1] = data[kOutputBytesOffset+1];
+                        // dispatch constructed packet (timestamp is stamp on first macro packet)
+                        dispatchKeyboardEventWithPacket(_macroBuffer);
+                        cancelTimer(_macroTimer);
+                        _macroCurrent = 0;
+                        return true;
+                    }
                 }
                 else
                 {
@@ -1338,8 +1372,8 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
                     cancelTimer(_macroTimer);
                     setTimerTimeout(_macroTimer, _macroMaxTime);
                     _macroCurrent++;
+                    return true;
                 }
-                return true;
             }
         }
     }
@@ -1596,6 +1630,13 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         }
     }
     
+    // tracking modifier key state
+    if (UInt8 bit = (_PS2flags[keyCodeRaw] >> 8))
+    {
+        UInt16 mask = 1 << (bit-1);
+        goingDown ? _PS2modifierState |= mask : _PS2modifierState &= ~mask;
+    }
+
     // codes e0f0 through e0ff can be used to call back into ACPI methods on this device
     if (keyCode >= 0x01f0 && keyCode <= 0x01ff && _provider != NULL)
     {
@@ -1616,19 +1657,19 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     {
         case 0x4e:  // Numpad+
         case 0x4a:  // Numpad-
-            if (_backlightLevels && KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x38))
+            if (_backlightLevels && checkModifierState(kMaskLeftControl|kMaskLeftAlt))
             {
                 // Ctrl+Alt+Numpad(+/-) => use to manipulate keyboard backlight
                 modifyKeyboardBacklight(keyCode, goingDown);
                 keyCode = 0;
             }
-            else if (_brightnessHack && KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x2a))
+            else if (_brightnessHack && checkModifierState(kMaskLeftControl|kMaskLeftShift))
             {
                 // Ctrl+Shift+NumPad(+/0) => manipulate brightness (special hack for HP Envy)
                 // Fn+F2 generates e0 ab and so does Fn+F3 (we will null those out in ps2 map)
                 static unsigned keys[] = { 0x2a, 0x1d };
                 // if Option key is down don't pull up on the Shift keys
-                int start = KBV_IS_KEYDOWN(0x15b) ? 1 : 0;
+                int start = checkModifierState(kMaskLeftWindows) ? 1 : 0;
                 for (int i = start; i < countof(keys); i++)
                     if (KBV_IS_KEYDOWN(keys[i]))
                         dispatchKeyboardEventX(_PS2ToADBMap[keys[i]], false, now_abs);
@@ -1642,7 +1683,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             
         case 0x0153:    // delete
             // check for Ctrl+Alt+Delete? (three finger salute)
-            if (KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x38))
+            if (checkModifierState(kMaskLeftControl|kMaskLeftAlt))
             {
                 keyCode = 0;
                 if (!goingDown)
@@ -1674,49 +1715,59 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 cancelTimer(_sleepEjectTimer);
             }
             break;
-            
+
+        //REVIEW: this is getting a bit ugly
+        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         case 0x0137:    // prt sc/sys rq
+        {
+            unsigned origKeyCode = keyCode;
             keyCode = 0;
             if (!goingDown)
                 break;
-            if (!KBV_IS_KEYDOWN(0x1d))
+            if (!checkModifierState(kMaskLeftControl))
             {
                 // get current enabled status, and toggle it
                 bool enabled;
                 _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
                 enabled = !enabled;
                 _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
+                break;
             }
-            else
+            if (origKeyCode != 0x0137)
+                break; // do not fall through for 0x0128
+            // fall through
+        }
+        case 0x0127:    // alternate for fnkeys toggle (discrete fnkeys toggle)
+            keyCode = 0;
+            if (!goingDown)
+                break;
+            if (_fkeymodesupported)
             {
-                if (_fkeymodesupported)
+                // modify HIDFKeyMode via IOService... IOHIDSystem
+                if (IOService* service = IOService::waitForMatchingService(serviceMatching(kIOHIDSystem), 0))
                 {
-                    // modify HIDFKeyMode via IOService... IOHIDSystem
-                    if (IOService* service = IOService::waitForMatchingService(serviceMatching(kIOHIDSystem), 0))
+                    const OSObject* num = OSNumber::withNumber(!_fkeymode, 32);
+                    const OSString* key = OSString::withCString(kHIDFKeyMode);
+                    if (num && key)
                     {
-                        const OSObject* num = OSNumber::withNumber(!_fkeymode, 32);
-                        const OSString* key = OSString::withCString(kHIDFKeyMode);
-                        if (num && key)
+                        if (OSDictionary* dict = OSDictionary::withObjects(&num, &key, 1))
                         {
-                            if (OSDictionary* dict = OSDictionary::withObjects(&num, &key, 1))
-                            {
-                                service->setProperties(dict);
-                                dict->release();
-                            }
+                            service->setProperties(dict);
+                            dict->release();
                         }
-                        OSSafeRelease(num);
-                        OSSafeRelease(key);
-                        service->release();
                     }
+                    OSSafeRelease(num);
+                    OSSafeRelease(key);
+                    service->release();
                 }
             }
             break;
     }
-        
+
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
-    if (goingDown && KBV_IS_KEYDOWN(0x38) &&
+    if (goingDown && checkModifierState(kMaskLeftAlt) &&
         ((keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 && keyCodeRaw != 0x4e && keyCodeRaw != 0x4a) ||
         (keyCodeRaw >= 0x02 && keyCodeRaw <= 0x0B)))
     {
@@ -1751,10 +1802,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             }
             break;
         case 0x92: // eject
-            if (!KBV_IS_KEYDOWN(0x1d) && !KBV_IS_KEYDOWN(0x11d) &&
-                !KBV_IS_KEYDOWN(0x2a) && !KBV_IS_KEYDOWN(0x36) &&
-                !KBV_IS_KEYDOWN(0x38) && !KBV_IS_KEYDOWN(0x138) &&
-                !KBV_IS_KEYDOWN(0x15b) && !KBV_IS_KEYDOWN(0x15c) && !KBV_IS_KEYDOWN(0x15d))
+            if (0 == _PS2modifierState)
             {
                 if (goingDown)
                 {
@@ -1781,7 +1829,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
     
 #ifdef DEBUG_LITE
-    int logscancodes = 1;
+    int logscancodes = 2;
 #else
     int logscancodes = _logscancodes;
 #endif
@@ -2269,6 +2317,7 @@ void ApplePS2Keyboard::initKeyboard()
     
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
+    _PS2modifierState = 0;
     
     //
     // Initialize the keyboard LED state.

@@ -21,7 +21,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 
 ### Build Environment
 
-My build environment is currently Xcode 4.6.3, using SDK 10.8, targeting OS X 10.6.
+My build environment is currently Xcode 6.1, using SDK 10.8, targeting OS X 10.6.
 
 No other build environment is supported.
 
@@ -86,6 +86,40 @@ Note: often times you will see either of the two problems mentioned above right 
 
 
 ### Change Log:
+
+2015-05-02 v1.8.15
+
+- Fix a problem with phantom key event e027 on certain ProBook laptops causing spurious/random fnkeys toggle
+
+- Allow for discrete fnkeys toggle and discrete trackpad toggle setup
+
+
+2015-02-23 v1.8.14
+
+- Fix a problem with u430 F9 key when "Use all F1, F2..." is selected.  This resulted in a new way to send both make/break keys from ACPI Notify (0x03xx and 0x04xx).
+
+
+2014-10-16 v1.8.13
+
+- Default for USBMouseStopsTrackpad is now zero instead of one.  This means the trackpad will not be disabled at the login screen when a USB mouse is plugged in.
+
+- turn off FakeMiddleButton in VoodooPS2Mouse.kext
+
+- some tweaks for ideapad
+
+- tuned movement/acceleration to better match the MacBookAir6,2.  Changed resolution to 400 from higher values, which seems to help...
+
+- other fixes/changes: see commit log for more information
+
+
+2014-05-23 v1.8.12
+
+- Fix bugs.  See commit log/issues database for details.
+
+- Finished Macro Inversion option for converting Fn+fkeys in challenging situations.
+
+- Lenovo u430 profile is working well now  (due to Macro Inversion and other features).
+
 
 2014-02-24 v1.8.11
 
