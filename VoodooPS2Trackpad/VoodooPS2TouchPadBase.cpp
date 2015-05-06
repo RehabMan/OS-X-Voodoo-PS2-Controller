@@ -195,7 +195,7 @@ bool VoodooPS2TouchPadBase::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog("VoodooPS2TouchPad Version 1.9.0 loaded...\n");
+	IOLog("VoodooPS2TouchPad Version 2.8.15 loaded...\n");
     
 	setProperty("Revision", 24, 32);
     
