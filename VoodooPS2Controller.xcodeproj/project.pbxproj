@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8404565D161E3AAF00D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8404565B161E3AAF00D74D7F /* InfoPlist.strings */; };
-		84045660161E3AC300D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8404565E161E3AC300D74D7F /* InfoPlist.strings */; };
-		84045663161E3AD800D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84045661161E3AD800D74D7F /* InfoPlist.strings */; };
-		84045666161E3AF900D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84045664161E3AF900D74D7F /* InfoPlist.strings */; };
 		84077EF71630080E0093D049 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84077EF31630080E0093D049 /* InfoPlist.strings */; };
 		84077EF81630080E0093D049 /* VoodooPS2synapticsPane.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84077EF51630080E0093D049 /* VoodooPS2synapticsPane.xib */; };
 		840F104A16EFE42600E8C116 /* ApplePS2Device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 840F104916EFE42600E8C116 /* ApplePS2Device.cpp */; };
@@ -597,7 +593,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84045666161E3AF900D74D7F /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -605,7 +600,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84045663161E3AD800D74D7F /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,7 +607,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84045660161E3AC300D74D7F /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -621,7 +614,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8404565D161E3AAF00D74D7F /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
