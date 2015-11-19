@@ -264,7 +264,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
     }
 
     // Set defaults for this mouse model
-	z_finger = 4;
+	z_finger = 1;
     zlimit = 255;
     ledge = 0;
     setupMaxes();
