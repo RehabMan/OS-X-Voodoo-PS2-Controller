@@ -115,11 +115,10 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 
     getModel(&E6, &E7);
 
-    DEBUG_LOG("E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }",
-        E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
+    DEBUG_LOG("ApplePS2ALPSGlidePoint: E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }\n", E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
 
     success = IsItALPS(&E6,&E7);
-	DEBUG_LOG("ALPS Device? %s\n", (success ? "yes" : "no"));
+    DEBUG_LOG("ApplePS2ALPSGlidePoint: ALPS Device? %s\n", (success ? "yes" : "no"));
 
     // override
     //success = true;
@@ -127,7 +126,7 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
     
     _device = 0;
 
-    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving.\n");
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving success=%d.\n", success);
     
     return (success) ? this : 0;
 }
@@ -366,11 +365,14 @@ void ApplePS2ALPSGlidePoint::packetReady()
     {
         UInt8* packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
-        if ((packet[0] & 0xf8) == 0xf8)
+        if ((packet[0] & 0xf8) == 0xf8) {
+            //DEBUG_LOG("ApplePS2ALPSGlidePoint abspacket %x %x %x %x %x %x\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             dispatchAbsolutePointerEventWithPacket(packet, kPacketLengthLarge);
-        else
+        }else{
+            //DEBUG_LOG("ApplePS2ALPSGlidePoint relpacket %x %x %x\n", packet[0], packet[1], packet[2]);
             dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
-        _ringBuffer.advanceTail(kPacketLengthSmall);
+        }
+        _ringBuffer.advanceTail(kPacketLengthMax);
     }
 }
 
