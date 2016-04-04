@@ -110,6 +110,8 @@ public:
     
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
+
+    virtual bool resetMouse();
     
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();

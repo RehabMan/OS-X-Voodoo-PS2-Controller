@@ -113,7 +113,10 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 
     _device = (ApplePS2MouseDevice *) provider;
 
+    _device->lock();
+    resetMouse(); // without resetMouse, ApplePS2SentelicFSP::probe make ALPS trackunresponsive to getModel
     getModel(&E6, &E7);
+    _device->unlock();
 
     DEBUG_LOG("ApplePS2ALPSGlidePoint: E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }\n", E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
 
@@ -318,6 +321,30 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     OSSafeReleaseNULL(_device);
     
 	super::stop(provider);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2ALPSGlidePoint::resetMouse() {
+    TPS2Request<3> request;
+    
+    // Reset mouse
+    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut = kDP_Reset;
+    request.commands[1].command = kPS2C_ReadDataPort;
+    request.commands[1].inOrOut = 0;
+    request.commands[2].command = kPS2C_ReadDataPort;
+    request.commands[2].inOrOut = 0;
+    request.commandsCount = 3;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    
+    // Verify the result
+    if (request.commands[1].inOrOut != kSC_Reset && request.commands[2].inOrOut != kSC_ID) {
+        DEBUG_LOG("Failed to reset mouse, return values did not match. [0x%02x, 0x%02x]\n", request.commands[1].inOrOut, request.commands[2].inOrOut);
+        return false;
+    }
+    return true;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
