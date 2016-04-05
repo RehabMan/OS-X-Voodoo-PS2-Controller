@@ -192,6 +192,7 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
 
 bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 { 
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::start\n");
     UInt64 enabledProperty;
 
     //
@@ -222,12 +223,9 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 
     enabledProperty = 1; 
 
-    setProperty("Clicking", enabledProperty, 
-        sizeof(enabledProperty) * 8);
-    setProperty("TrackpadScroll", enabledProperty, 
-        sizeof(enabledProperty) * 8);
-    setProperty("TrackpadHorizScroll", enabledProperty, 
-        sizeof(enabledProperty) * 8);
+    setProperty("Clicking", enabledProperty, sizeof(enabledProperty) * 8);
+    setProperty("TrackpadScroll", enabledProperty, sizeof(enabledProperty) * 8);
+    setProperty("TrackpadHorizScroll", enabledProperty, sizeof(enabledProperty) * 8);
 
     //
     // Must add this property to let our superclass know that it should handle
@@ -247,7 +245,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     setTapEnable( true );
     
     // Enable Absolute Mode
-	setAbsoluteMode();
+    setAbsoluteMode();
     
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
@@ -287,6 +285,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 
 void ApplePS2ALPSGlidePoint::stop( IOService * provider )
 {
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::stop\n");
     //
     // The driver has been instructed to stop.  Note that we must break all
     // connections to other service objects now (ie. no registered actions,
@@ -547,7 +546,8 @@ void ApplePS2ALPSGlidePoint::
 
     uint64_t now_abs;
     clock_get_uptime(&now_abs);
-    dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
+//DEBUG_LOG("dispatchRelativePointerEventWithPacket dx=%x dy=%x buttons=%x",dx, dy, buttons);
+    dispatchRelativePointerEventX(dx, -dy, buttons, now_abs);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -606,6 +606,8 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable( bool enable )
     // It is safe to issue this request from the interrupt/completion context.
     //
 
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::setTouchPadEnable entered\n");
+    
     // (mouse enable/disable command)
     TPS2Request<5> request;
     request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -630,74 +632,77 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable( bool enable )
 IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
 {
     OSNumber * clicking = OSDynamicCast( OSNumber, dict->getObject("Clicking") );
-	OSNumber * dragging = OSDynamicCast( OSNumber, dict->getObject("Dragging") );
-	OSNumber * draglock = OSDynamicCast( OSNumber, dict->getObject("DragLock") );
+    OSNumber * dragging = OSDynamicCast( OSNumber, dict->getObject("Dragging") );
+    OSNumber * draglock = OSDynamicCast( OSNumber, dict->getObject("DragLock") );
     OSNumber * hscroll  = OSDynamicCast( OSNumber, dict->getObject("TrackpadHorizScroll") );
     OSNumber * vscroll  = OSDynamicCast( OSNumber, dict->getObject("TrackpadScroll") );
     OSNumber * eaccell  = OSDynamicCast( OSNumber, dict->getObject("HIDTrackpadScrollAcceleration") );
-
-    OSCollectionIterator* iter = OSCollectionIterator::withCollection( dict );
-    OSObject* obj;
     
-    iter->reset();
-    while ((obj = iter->getNextObject()) != NULL)
+    OSCollectionIterator* iterator = OSCollectionIterator::withCollection( dict );
+    if ( iterator )
     {
-        OSString* str = OSDynamicCast( OSString, obj );
-        OSNumber* val = OSDynamicCast( OSNumber, dict->getObject( str ) );
-        
-        if (val)
-            DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(),
-                str->getCStringNoCopy(), val->unsigned32BitValue());
-        else
-            DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(),
-                str->getCStringNoCopy());
+        OSSymbol* aKey;
+        while ((aKey = (OSSymbol *)iterator->getNextObject()) != NULL)
+        {
+            OSObject * value = dict->getObject(aKey);
+            OSNumber* unsigned32BitOSNumber = OSDynamicCast( OSNumber, value);
+            
+            if (unsigned32BitOSNumber) {
+                DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(), aKey->getCStringNoCopy(), unsigned32BitOSNumber->unsigned32BitValue());
+            }else if (value) {
+                DEBUG_LOG("%s: Dictionary Object: %s Value: %s\n", getName(), aKey->getCStringNoCopy(), value->getMetaClass()->getClassName());
+            }else{
+                DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(), aKey->getCStringNoCopy());
+            }
+        }
     }
+    
     if ( clicking )
-    {    
+    {
         UInt8  newModeByteValue = clicking->unsigned32BitValue() & 0x1 ?
                                   kTapEnabled :
                                   0;
-
+        
         if (_touchPadModeByte != newModeByteValue)
         {
             _touchPadModeByte = newModeByteValue;
 			setTapEnable(_touchPadModeByte);
-			setProperty("Clicking", clicking);
-			setAbsoluteMode(); //restart the mouse...
+            setProperty("Clicking", clicking);
+            setAbsoluteMode(); //restart the mouse...
         }
     }
-
-	if (dragging)
-	{
-		_dragging = dragging->unsigned32BitValue() & 0x1 ? true : false;
-		setProperty("Dragging", dragging);
-	}
-
-	if (draglock)
-	{
-		_draglock = draglock->unsigned32BitValue() & 0x1 ? true : false;
-		setProperty("DragLock", draglock);
-	}
-
+    
+    if (dragging)
+    {
+        _dragging = dragging->unsigned32BitValue() & 0x1 ? true : false;
+        setProperty("Dragging", dragging);
+    }
+    
+    if (draglock)
+    {
+        _draglock = draglock->unsigned32BitValue() & 0x1 ? true : false;
+        setProperty("DragLock", draglock);
+    }
+    
     if (hscroll)
     {
         _edgehscroll = hscroll->unsigned32BitValue() & 0x1 ? true : false;
         setProperty("TrackpadHorizScroll", hscroll);
     }
-
+    
     if (vscroll)
     {
         _edgevscroll = vscroll->unsigned32BitValue() & 0x1 ? true : false;
         setProperty("TrackpadScroll", vscroll);
-        }
+    }
     if (eaccell)
     {
         _edgeaccell = eaccell->unsigned32BitValue();
-        _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75.0); 
-        _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
+        _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75.0);
+        _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue; // same as in init
         setProperty("HIDTrackpadScrollAcceleration", eaccell);
     }
-
+    
     return super::setParamProperties(dict);
 }
 
@@ -736,6 +741,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
 
 void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status)
 {
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::getStatus entered\n");
     // (read command byte)
     TPS2Request<7> request;
 	request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -765,6 +771,7 @@ void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status)
 
 void ApplePS2ALPSGlidePoint::getModel(ALPSStatus_t *E6,ALPSStatus_t *E7)
 {
+DEBUG_LOG("ApplePS2ALPSGlidePoint::getModel entered\n");
     // "E6 report"
     TPS2Request<9> request;
     request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
@@ -829,6 +836,7 @@ void ApplePS2ALPSGlidePoint::getModel(ALPSStatus_t *E6,ALPSStatus_t *E7)
 
 void ApplePS2ALPSGlidePoint::setAbsoluteMode()
 {
+DEBUG_LOG("ApplePS2ALPSGlidePoint::setAbsoluteMode entered\n");
     // (read command byte)
     TPS2Request<6> request;
 	request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;

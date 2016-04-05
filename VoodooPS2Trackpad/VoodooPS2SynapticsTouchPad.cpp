@@ -248,7 +248,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
-    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
+    DEBUG_LOG("jief 9 ApplePS2SynapticsTouchPad::probe entered...\n");
     
     //
     // The driver has been instructed to verify the presence of the actual
@@ -338,8 +338,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     
     _device = 0;
 
-    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe leaving.\n");
-    
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe leaving success=%d.\n", success);
     return success ? this : 0;
 }
 
@@ -467,6 +466,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 
 bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::start\n");
     //
     // The driver has been instructed to start. This is called after a
     // successful probe and match.
@@ -2305,6 +2305,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
 
 void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::setParamPropertiesGated\n");
 	if (NULL == config)
 		return;
     
@@ -2545,6 +2546,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 
 IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::setParamProperties\n");
     ////IOReturn result = super::IOHIDevice::setParamProperties(dict);
     if (_cmdGate)
     {
@@ -2559,6 +2561,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
 
 IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::setProperties\n");
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
     if (dict && _cmdGate)
     {
@@ -2573,6 +2576,7 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 
 void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::setDevicePowerState");
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
