@@ -25,12 +25,6 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2ALPSGlidePoint.h"
 
-enum {
-    //
-    //
-    kTapEnabled  = 0x01
-};
-
 // =============================================================================
 // ApplePS2ALPSGlidePoint Class Implementation
 //
@@ -64,7 +58,20 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
-    _touchPadModeByte          = kTapEnabled;
+    
+    _tapEnableDisableWorking    = false;
+
+    // public property
+    _tapEnabled                = true;
+    _dragging                  = false;
+    _edgehscroll               = false;
+    _edgevscroll               = false;
+    _edgeaccell                = 49152;
+    _edgeaccellvalue           = (((double)(_edgeaccell / 1966.08)) / 75.0); // same as in setParamPropertiesGated
+    _edgeaccellvalue           = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
+    _draglock                  = false;
+    
+    
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
     
@@ -98,6 +105,9 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
         setProperty(kMergedConfiguration, config);
 #endif
     }
+
+    // load settings specific to Platform Profile
+    setParamProperties(config);
     OSSafeRelease(config);
 
 	ALPSStatus_t E6,E7;
@@ -122,6 +132,11 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 
     success = IsItALPS(&E6,&E7);
     DEBUG_LOG("ApplePS2ALPSGlidePoint: ALPS Device? %s\n", (success ? "yes" : "no"));
+    if ( success ) {
+        if ( E7.byte0 == 0x63 && E7.byte0 == 0x3 && E7.byte0 == 0xc8 ) { // D630, D800, M4300
+            _tapEnableDisableWorking = false;
+        }
+    }
 
     // override
     //success = true;
@@ -144,7 +159,7 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
 	byte1 = E7->byte1;
 	byte2 = E7->byte2;
 	
-	#define NUM_SINGLES 11
+	#define NUM_SINGLES 10
 	static int singles[NUM_SINGLES * 3] ={
 		0x33,0x2,0x0a,
 		0x53,0x2,0x0a,
@@ -155,13 +170,14 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
 		0x63,0x2,0x28,
 		0x63,0x2,0x3c,
 		0x63,0x2,0x50,
-		0x63,0x2,0x64,
-        0x63, 0x03, 0xc8 }; // Dell Latitude D800, M4300
-	#define NUM_DUALS 3
+		0x63,0x2,0x64};
+	#define NUM_DUALS 4
 	static int duals[NUM_DUALS * 3]={
 		0x20,0x2,0xe,
 		0x22,0x2,0xa,
-		0x22,0x2,0x14};
+		0x22,0x2,0x14,
+        0x63,0x3,0xc8  // Dell Latitude D800, M4300
+    };
 
 	for (i = 0; i < NUM_SINGLES; i++)
     {
@@ -234,6 +250,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     //
 
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
 
     //
     // Lock the controller during initialization
@@ -242,7 +259,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     _device->lock();
     
     // Enable tapping
-    setTapEnable( true );
+    setTapEnable( _tapEnabled );
     
     // Enable Absolute Mode
     setAbsoluteMode();
@@ -551,50 +568,58 @@ void ApplePS2ALPSGlidePoint::
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+/* 
+ * Calling this on my M4300 mess the trackpad. Packket become malformed.
+ * Maybe because it's dual
+ * Does someone know how to do it ?
+ */
 void ApplePS2ALPSGlidePoint::setTapEnable( bool enable )
 {
-    //
-    // Instructs the trackpad to honor or ignore tapping
-    //
-	
-	ALPSStatus_t Status;
-	getStatus(&Status);
-	if (Status.byte0 & 0x04) 
+    if ( _tapEnableDisableWorking )
     {
-        DEBUG_LOG("Tapping can only be toggled.\n");
-		enable = false;
-	}
+        DEBUG_LOG("ApplePS2ALPSGlidePoint::setTapEnable2 entered, enable=%d\n", enable);
+        //
+        // Instructs the trackpad to honor or ignore tapping
+        //
+        
+        ALPSStatus_t Status;
+        getStatus(&Status);
+        if (Status.byte0 & 0x04) 
+        {
+            DEBUG_LOG("Tapping can only be toggled.\n");
+            enable = false;
+        }
 
-	int cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution; 
-	int arg = enable ? 0x0A : 0x00;
+        int cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution; 
+        int arg = enable ? 0x0A : 0x00;
 
-    TPS2Request<10> request;
-    request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[0].inOrOut =  kDP_GetMouseInformation; //sync..
-	request.commands[1].command = kPS2C_ReadDataPort;
-	request.commands[1].inOrOut =  0;
-	request.commands[2].command = kPS2C_ReadDataPort;
-	request.commands[2].inOrOut =  0;
-	request.commands[3].command = kPS2C_ReadDataPort;
-	request.commands[3].inOrOut =  0;
-    request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut  = kDP_SetDefaultsAndDisable;
-    request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[6].inOrOut = cmd;
-	request.commands[7].command = kPS2C_WriteCommandPort;
-	request.commands[7].inOrOut = kCP_TransmitToMouse;
-	request.commands[8].command = kPS2C_WriteDataPort;
-	request.commands[8].inOrOut = arg;
-	request.commands[9].command = kPS2C_ReadDataPortAndCompare;
-	request.commands[9].inOrOut = kSC_Acknowledge;	
-	request.commandsCount = 10;
-    assert(request.commandsCount <= countof(request.commands));
-	_device->submitRequestAndBlock(&request);
+        TPS2Request<10> request;
+        request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[0].inOrOut =  kDP_GetMouseInformation; //sync..
+        request.commands[1].command = kPS2C_ReadDataPort;
+        request.commands[1].inOrOut =  0;
+        request.commands[2].command = kPS2C_ReadDataPort;
+        request.commands[2].inOrOut =  0;
+        request.commands[3].command = kPS2C_ReadDataPort;
+        request.commands[3].inOrOut =  0;
+        request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[5].inOrOut  = kDP_SetDefaultsAndDisable;
+        request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[6].inOrOut = cmd;
+        request.commands[7].command = kPS2C_WriteCommandPort;
+        request.commands[7].inOrOut = kCP_TransmitToMouse;
+        request.commands[8].command = kPS2C_WriteDataPort;
+        request.commands[8].inOrOut = arg;
+        request.commands[9].command = kPS2C_ReadDataPortAndCompare;
+        request.commands[9].inOrOut = kSC_Acknowledge;	
+        request.commandsCount = 10;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
 
-	getStatus(&Status);
+        getStatus(&Status);
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -659,16 +684,15 @@ IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
     
     if ( clicking )
     {
-        UInt8  newModeByteValue = clicking->unsigned32BitValue() & 0x1 ?
-                                  kTapEnabled :
-                                  0;
+        bool newTapEnabled =  (clicking->unsigned32BitValue() & 0x1) != 0;
         
-        if (_touchPadModeByte != newModeByteValue)
+        if (newTapEnabled != _tapEnabled)
         {
-            _touchPadModeByte = newModeByteValue;
-			setTapEnable(_touchPadModeByte);
+            _tapEnabled = newTapEnabled;
+            setTapEnable(_tapEnabled);
             setProperty("Clicking", clicking);
             setAbsoluteMode(); //restart the mouse...
+            setTouchPadEnable(true);
         }
     }
     
@@ -723,7 +747,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
 
         case kPS2C_EnableDevice:
             
-            setTapEnable( _touchPadModeByte );
+            setTapEnable( _tapEnabled );
 
             //
             // Finally, we enable the trackpad itself, so that it may

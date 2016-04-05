@@ -26,6 +26,10 @@
 	<dict>
 		<key>ALPS GlidePoint</key>
 		<dict>
+			<key>VendorID</key>
+			<integer>1452</integer>
+			<key>ProductID</key>
+			<integer>547</integer>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
@@ -40,6 +44,18 @@
 				<dict>
 					<key>DisableDevice</key>
 					<false/>
+					<key>Clicking</key>
+					<true/>
+					<key>Dragging</key>
+					<false/>
+					<key>DragLock</key>
+					<false/>
+					<key>TrackpadHorizScroll</key>
+					<false/>
+					<key>TrackpadScroll</key>
+					<false/>
+					<key>HIDTrackpadScrollAcceleration</key>
+					<integer>49152</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
@@ -98,7 +114,7 @@
 				<key>Default</key>
 				<dict>
 					<key>DisableDevice</key>
-					<false/>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
@@ -169,7 +185,7 @@
 				<key>Default</key>
 				<dict>
 					<key>DisableDevice</key>
-					<false/>
+					<true/>
 					<key>CenterX</key>
 					<integer>3000</integer>
 					<key>CenterY</key>
