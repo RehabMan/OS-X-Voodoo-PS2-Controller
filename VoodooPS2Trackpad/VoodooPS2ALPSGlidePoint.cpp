@@ -60,6 +60,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
     
     _tapEnableDisableWorking   = true;
+    _setAbsoluteWorking        = true;
 
     // public property
     _tapEnabled                = true;
@@ -106,10 +107,6 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 #endif
     }
 
-    // load settings specific to Platform Profile
-    setParamProperties(config);
-    OSSafeRelease(config);
-
 	ALPSStatus_t E6,E7;
     //
     // The driver has been instructed to verify the presence of the actual
@@ -135,11 +132,14 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
     if ( success ) {
         if ( E7.byte0 == 0x63 && E7.byte1 == 0x3 && E7.byte2 == 0xc8 ) { // D630, D800, M4300
             _tapEnableDisableWorking = false;
+            _setAbsoluteWorking = false;
         }
     }
+    
+    // load settings specific to Platform Profile. Has to be done after adjusting _tapEnableDisableWorking && _setAbsoluteWorking
+    setParamProperties(config);
+    OSSafeRelease(config);
 
-    // override
-    //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
     
     _device = 0;
@@ -860,6 +860,11 @@ DEBUG_LOG("ApplePS2ALPSGlidePoint::getModel entered\n");
 
 void ApplePS2ALPSGlidePoint::setAbsoluteMode()
 {
+    /*
+     * Calling this on my M4300 and D630 does nothing except disabling the trackpoint.
+     */
+    if ( _setAbsoluteWorking )
+    {
         DEBUG_LOG("ApplePS2ALPSGlidePoint::setAbsoluteMode entered\n");
         // (read command byte)
         TPS2Request<6> request;
@@ -879,3 +884,4 @@ void ApplePS2ALPSGlidePoint::setAbsoluteMode()
         assert(request.commandsCount <= countof(request.commands));
         _device->submitRequestAndBlock(&request);
     }
+}

@@ -60,6 +60,7 @@ private:
     UInt16                _touchPadVersion;
     
     bool                  _tapEnableDisableWorking;
+    bool                  _setAbsoluteWorking;
     
     bool                  _tapEnabled; // Clicking
 	bool				  _dragging;
