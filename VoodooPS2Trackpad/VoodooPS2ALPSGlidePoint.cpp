@@ -59,7 +59,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _packetByteCount           = 0;
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
     
-    _tapEnableDisableWorking    = false;
+    _tapEnableDisableWorking   = true;
 
     // public property
     _tapEnabled                = true;
