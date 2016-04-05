@@ -289,16 +289,18 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   // verify that compiler is working correctly wrt PS2Request/TPS2Request
   if (sizeof(PS2Request) != sizeof(TPS2Request<0>))
   {
-      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n",
-            sizeof(PS2Request), sizeof(TPS2Request<0>));
+      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n", sizeof(PS2Request), sizeof(TPS2Request<0>));
       return false;
   }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
   if (offsetof(PS2Request,commands) != offsetof(TPS2Request<>,commands))
   {
-      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n",
-            offsetof(PS2Request,commands), offsetof(PS2Request,commands));
+      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n", offsetof(PS2Request,commands), offsetof(PS2Request,commands));
       return false;
   }
+#pragma GCC diagnostic pop
 
   //
   // Initialize minimal state.
