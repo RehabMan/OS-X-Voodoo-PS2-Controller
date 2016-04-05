@@ -133,7 +133,7 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
     success = IsItALPS(&E6,&E7);
     DEBUG_LOG("ApplePS2ALPSGlidePoint: ALPS Device? %s\n", (success ? "yes" : "no"));
     if ( success ) {
-        if ( E7.byte0 == 0x63 && E7.byte0 == 0x3 && E7.byte0 == 0xc8 ) { // D630, D800, M4300
+        if ( E7.byte0 == 0x63 && E7.byte1 == 0x3 && E7.byte2 == 0xc8 ) { // D630, D800, M4300
             _tapEnableDisableWorking = false;
         }
     }
@@ -860,22 +860,22 @@ DEBUG_LOG("ApplePS2ALPSGlidePoint::getModel entered\n");
 
 void ApplePS2ALPSGlidePoint::setAbsoluteMode()
 {
-DEBUG_LOG("ApplePS2ALPSGlidePoint::setAbsoluteMode entered\n");
-    // (read command byte)
-    TPS2Request<6> request;
-	request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
-	request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[4].inOrOut = kDP_Enable;
-	request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[5].inOrOut = 0xF0; //Set poll ??!
-    request.commandsCount = 6;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-}
+        DEBUG_LOG("ApplePS2ALPSGlidePoint::setAbsoluteMode entered\n");
+        // (read command byte)
+        TPS2Request<6> request;
+        request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[4].inOrOut = kDP_Enable;
+        request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[5].inOrOut = 0xF0; //Set poll ??!
+        request.commandsCount = 6;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
+    }
