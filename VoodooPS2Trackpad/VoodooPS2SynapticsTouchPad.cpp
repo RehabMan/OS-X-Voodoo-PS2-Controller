@@ -248,7 +248,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
-    DEBUG_LOG("jief 9 ApplePS2SynapticsTouchPad::probe entered...\n");
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
     
     //
     // The driver has been instructed to verify the presence of the actual
