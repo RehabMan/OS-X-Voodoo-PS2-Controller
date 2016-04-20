@@ -71,7 +71,7 @@ void ApplePS2Controller::interruptHandlerMouse(OSObject*, void* refCon, IOServic
   // interrupt, so returning from this routine without clearing the interrupt
   // condition is perfectly normal.
   //
-#if HANDLE_INTERRUPT_DATA_LATER
+#if HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
   me->_interruptSourceMouse->interruptOccurred(0, 0, 0);
 #else
   me->handleInterrupt(kDT_Mouse);
@@ -145,7 +145,7 @@ void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOSer
   // interrupt, so returning from this routine without clearing the interrupt
   // condition is perfectly normal.
   //
-#if HANDLE_INTERRUPT_DATA_LATER
+#if HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
   me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
 #else
   me->handleInterrupt(kDT_Keyboard);
@@ -169,7 +169,7 @@ void ApplePS2Controller::onWatchdogTimer()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#if !HANDLE_INTERRUPT_DATA_LATER
+#if !HANDLE_INTERRUPT_DATA_LATER // = new mode
 
 void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
 {
@@ -236,7 +236,7 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
         _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
 }
 
-#else // HANDLE_INTERRUPT_DATA_LATER
+#else // HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
 
 void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
 {
@@ -289,16 +289,18 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   // verify that compiler is working correctly wrt PS2Request/TPS2Request
   if (sizeof(PS2Request) != sizeof(TPS2Request<0>))
   {
-      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n",
-            sizeof(PS2Request), sizeof(TPS2Request<0>));
+      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n", sizeof(PS2Request), sizeof(TPS2Request<0>));
       return false;
   }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
   if (offsetof(PS2Request,commands) != offsetof(TPS2Request<>,commands))
   {
-      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n",
-            offsetof(PS2Request,commands), offsetof(PS2Request,commands));
+      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n", offsetof(PS2Request,commands), offsetof(PS2Request,commands));
       return false;
   }
+#pragma GCC diagnostic pop
 
   //
   // Initialize minimal state.
@@ -586,19 +588,14 @@ bool ApplePS2Controller::start(IOService * provider)
   //
 
   _workLoop                = IOWorkLoop::workLoop();
-#if HANDLE_INTERRUPT_DATA_LATER
-  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
-	OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
-  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+#if HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
+  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this, OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this, OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
 #else
-  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyMouse));
-  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyKeyboard));
+  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this, OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyMouse));
+  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this, OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyKeyboard));
 #endif
-  _interruptSourceQueue    = IOInterruptEventSource::interruptEventSource( this,
-			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
+  _interruptSourceQueue    = IOInterruptEventSource::interruptEventSource( this, OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
   _cmdGate = IOCommandGate::commandGate(this);
 #if WATCHDOG_TIMER
   _watchdogTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Controller::onWatchdogTimer));
@@ -991,7 +988,7 @@ void ApplePS2Controller::submitRequestAndBlockGated(PS2Request* request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#if HANDLE_INTERRUPT_DATA_LATER
+#if HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
 void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
 {                                                      // IOInterruptEventAction
   //
@@ -1045,7 +1042,7 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
 }
 #endif // HANDLE_INTERRUPT_DATA_LATER
 
-#if !HANDLE_INTERRUPT_DATA_LATER
+#if !HANDLE_INTERRUPT_DATA_LATER // = new mode
 void ApplePS2Controller::packetReadyKeyboard(IOInterruptEventSource *, int)
 {
     // a complete packet has arrived for the keyboard and has signaled the workloop
@@ -1086,7 +1083,7 @@ void ApplePS2Controller::dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8
     PS2InterruptResult result = _dispatchDriverInterrupt(deviceType, data);
     if (kPS2IR_packetReady == result)
     {
-#if HANDLE_INTERRUPT_DATA_LATER
+#if HANDLE_INTERRUPT_DATA_LATER // = 0.98 mode
         if (kDT_Mouse == deviceType)
             (*_packetActionMouse)(_interruptTargetMouse);
         else if (kDT_Keyboard == deviceType)

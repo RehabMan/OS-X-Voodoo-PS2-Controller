@@ -58,8 +58,11 @@ private:
     UInt32                _packetByteCount;
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
-    UInt8                 _touchPadModeByte;
-
+    
+    bool                  _tapEnableDisableWorking;
+    bool                  _setAbsoluteWorking;
+    
+    bool                  _tapEnabled; // Clicking
 	bool				  _dragging;
 	bool				  _edgehscroll;
 	bool				  _edgevscroll;
@@ -110,11 +113,13 @@ public:
     
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
+
+    virtual bool resetMouse();
     
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
 
-	virtual IOReturn setParamProperties( OSDictionary * dict );
+    virtual IOReturn setParamProperties( OSDictionary * dict );
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */

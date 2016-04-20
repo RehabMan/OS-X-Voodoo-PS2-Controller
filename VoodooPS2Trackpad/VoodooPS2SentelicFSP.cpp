@@ -286,7 +286,7 @@ ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * 
         success = true;
     }
 	
-    DEBUG_LOG("ApplePS2SentelicFSP::probe leaving.\n");
+    DEBUG_LOG("ApplePS2SentelicFSP::probe leaving, sucess=%d.\n", success);
     return (success) ? this : 0;
 }
 

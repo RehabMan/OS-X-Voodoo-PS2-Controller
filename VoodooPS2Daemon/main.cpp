@@ -350,12 +350,15 @@ int main(int argc, const char *argv[])
 	g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!g_ioservice)
 	{
+        g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2ALPSGlidePoint"));
+        if (!g_ioservice) {
         // otherwise, talk to mouse driver
-        g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2Mouse"));
-        if (!g_ioservice)
-        {
-            DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
-            return -1;
+            g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2Mouse"));
+            if (!g_ioservice)
+            {
+                DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2ALPSGlidePoint or ApplePS2Mouse found\n");
+                return -1;
+            }
         }
 	}
     

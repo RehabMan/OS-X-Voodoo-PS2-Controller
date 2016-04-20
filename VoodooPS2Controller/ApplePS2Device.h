@@ -138,6 +138,7 @@
 #define kSC_Resend              0xFE    // request to resend keybd cmd
 #define kSC_Reset               0xAA    // the keyboard/mouse has reset
 #define kSC_UpBit               0x80    // OR'd in if key below is released
+#define kSC_ID                  0x00    // PSMOUSE_RET_ID
 
 //
 // Scan Codes for some modifier keys.

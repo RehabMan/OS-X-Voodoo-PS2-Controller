@@ -25,12 +25,6 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2ALPSGlidePoint.h"
 
-enum {
-    //
-    //
-    kTapEnabled  = 0x01
-};
-
 // =============================================================================
 // ApplePS2ALPSGlidePoint Class Implementation
 //
@@ -64,7 +58,21 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
-    _touchPadModeByte          = kTapEnabled;
+    
+    _tapEnableDisableWorking   = true;
+    _setAbsoluteWorking        = true;
+
+    // public property
+    _tapEnabled                = true;
+    _dragging                  = false;
+    _edgehscroll               = false;
+    _edgevscroll               = false;
+    _edgeaccell                = 49152;
+    _edgeaccellvalue           = (((double)(_edgeaccell / 1966.08)) / 75.0); // same as in setParamPropertiesGated
+    _edgeaccellvalue           = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
+    _draglock                  = false;
+    
+    
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
     
@@ -98,7 +106,6 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
         setProperty(kMergedConfiguration, config);
 #endif
     }
-    OSSafeRelease(config);
 
 	ALPSStatus_t E6,E7;
     //
@@ -113,21 +120,31 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 
     _device = (ApplePS2MouseDevice *) provider;
 
+    _device->lock();
+    resetMouse(); // without resetMouse, ApplePS2SentelicFSP::probe make ALPS trackunresponsive to getModel
     getModel(&E6, &E7);
+    _device->unlock();
 
-    DEBUG_LOG("E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }",
-        E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
+    DEBUG_LOG("ApplePS2ALPSGlidePoint: E7: { 0x%02x, 0x%02x, 0x%02x } E6: { 0x%02x, 0x%02x, 0x%02x }\n", E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
 
     success = IsItALPS(&E6,&E7);
-	DEBUG_LOG("ALPS Device? %s\n", (success ? "yes" : "no"));
+    DEBUG_LOG("ApplePS2ALPSGlidePoint: ALPS Device? %s\n", (success ? "yes" : "no"));
+    if ( success ) {
+        if ( E7.byte0 == 0x63 && E7.byte1 == 0x3 && E7.byte2 == 0xc8 ) { // D630, D800, M4300
+            _tapEnableDisableWorking = false;
+            _setAbsoluteWorking = false;
+        }
+    }
+    
+    // load settings specific to Platform Profile. Has to be done after adjusting _tapEnableDisableWorking && _setAbsoluteWorking
+    setParamProperties(config);
+    OSSafeRelease(config);
 
-    // override
-    //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
     
     _device = 0;
 
-    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving.\n");
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving success=%d.\n", success);
     
     return (success) ? this : 0;
 }
@@ -154,11 +171,13 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
 		0x63,0x2,0x3c,
 		0x63,0x2,0x50,
 		0x63,0x2,0x64};
-	#define NUM_DUALS 3
+	#define NUM_DUALS 4
 	static int duals[NUM_DUALS * 3]={
 		0x20,0x2,0xe,
 		0x22,0x2,0xa,
-		0x22,0x2,0x14};
+		0x22,0x2,0x14,
+        0x63,0x3,0xc8  // Dell Latitude D800, M4300
+    };
 
 	for (i = 0; i < NUM_SINGLES; i++)
     {
@@ -189,6 +208,7 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
 
 bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 { 
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::start\n");
     UInt64 enabledProperty;
 
     //
@@ -219,12 +239,9 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 
     enabledProperty = 1; 
 
-    setProperty("Clicking", enabledProperty, 
-        sizeof(enabledProperty) * 8);
-    setProperty("TrackpadScroll", enabledProperty, 
-        sizeof(enabledProperty) * 8);
-    setProperty("TrackpadHorizScroll", enabledProperty, 
-        sizeof(enabledProperty) * 8);
+    setProperty("Clicking", enabledProperty, sizeof(enabledProperty) * 8);
+    setProperty("TrackpadScroll", enabledProperty, sizeof(enabledProperty) * 8);
+    setProperty("TrackpadHorizScroll", enabledProperty, sizeof(enabledProperty) * 8);
 
     //
     // Must add this property to let our superclass know that it should handle
@@ -233,6 +250,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     //
 
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
 
     //
     // Lock the controller during initialization
@@ -241,10 +259,10 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     _device->lock();
     
     // Enable tapping
-    setTapEnable( true );
+    setTapEnable( _tapEnabled );
     
     // Enable Absolute Mode
-	setAbsoluteMode();
+    setAbsoluteMode();
     
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
@@ -284,6 +302,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 
 void ApplePS2ALPSGlidePoint::stop( IOService * provider )
 {
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::stop\n");
     //
     // The driver has been instructed to stop.  Note that we must break all
     // connections to other service objects now (ie. no registered actions,
@@ -319,6 +338,30 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     OSSafeReleaseNULL(_device);
     
 	super::stop(provider);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2ALPSGlidePoint::resetMouse() {
+    TPS2Request<3> request;
+    
+    // Reset mouse
+    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut = kDP_Reset;
+    request.commands[1].command = kPS2C_ReadDataPort;
+    request.commands[1].inOrOut = 0;
+    request.commands[2].command = kPS2C_ReadDataPort;
+    request.commands[2].inOrOut = 0;
+    request.commandsCount = 3;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    
+    // Verify the result
+    if (request.commands[1].inOrOut != kSC_Reset && request.commands[2].inOrOut != kSC_ID) {
+        DEBUG_LOG("Failed to reset mouse, return values did not match. [0x%02x, 0x%02x]\n", request.commands[1].inOrOut, request.commands[2].inOrOut);
+        return false;
+    }
+    return true;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -366,11 +409,14 @@ void ApplePS2ALPSGlidePoint::packetReady()
     {
         UInt8* packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
-        if ((packet[0] & 0xf8) == 0xf8)
+        if ((packet[0] & 0xf8) == 0xf8) {
+            //DEBUG_LOG("ApplePS2ALPSGlidePoint abspacket %x %x %x %x %x %x\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
             dispatchAbsolutePointerEventWithPacket(packet, kPacketLengthLarge);
-        else
+        }else{
+            //DEBUG_LOG("ApplePS2ALPSGlidePoint relpacket %x %x %x\n", packet[0], packet[1], packet[2]);
             dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
-        _ringBuffer.advanceTail(kPacketLengthSmall);
+        }
+        _ringBuffer.advanceTail(kPacketLengthMax);
     }
 }
 
@@ -517,54 +563,63 @@ void ApplePS2ALPSGlidePoint::
 
     uint64_t now_abs;
     clock_get_uptime(&now_abs);
-    dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
+//DEBUG_LOG("dispatchRelativePointerEventWithPacket dx=%x dy=%x buttons=%x",dx, dy, buttons);
+    dispatchRelativePointerEventX(dx, -dy, buttons, now_abs);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+/* 
+ * Calling this on my M4300 mess the trackpad. Packket become malformed.
+ * Maybe because it's dual
+ * Does someone know how to do it ?
+ */
 void ApplePS2ALPSGlidePoint::setTapEnable( bool enable )
 {
-    //
-    // Instructs the trackpad to honor or ignore tapping
-    //
-	
-	ALPSStatus_t Status;
-	getStatus(&Status);
-	if (Status.byte0 & 0x04) 
+    if ( _tapEnableDisableWorking )
     {
-        DEBUG_LOG("Tapping can only be toggled.\n");
-		enable = false;
-	}
+        DEBUG_LOG("ApplePS2ALPSGlidePoint::setTapEnable2 entered, enable=%d\n", enable);
+        //
+        // Instructs the trackpad to honor or ignore tapping
+        //
+        
+        ALPSStatus_t Status;
+        getStatus(&Status);
+        if (Status.byte0 & 0x04) 
+        {
+            DEBUG_LOG("Tapping can only be toggled.\n");
+            enable = false;
+        }
 
-	int cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution; 
-	int arg = enable ? 0x0A : 0x00;
+        int cmd = enable ? kDP_SetMouseSampleRate : kDP_SetMouseResolution; 
+        int arg = enable ? 0x0A : 0x00;
 
-    TPS2Request<10> request;
-    request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[0].inOrOut =  kDP_GetMouseInformation; //sync..
-	request.commands[1].command = kPS2C_ReadDataPort;
-	request.commands[1].inOrOut =  0;
-	request.commands[2].command = kPS2C_ReadDataPort;
-	request.commands[2].inOrOut =  0;
-	request.commands[3].command = kPS2C_ReadDataPort;
-	request.commands[3].inOrOut =  0;
-    request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut  = kDP_SetDefaultsAndDisable;
-    request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[6].inOrOut = cmd;
-	request.commands[7].command = kPS2C_WriteCommandPort;
-	request.commands[7].inOrOut = kCP_TransmitToMouse;
-	request.commands[8].command = kPS2C_WriteDataPort;
-	request.commands[8].inOrOut = arg;
-	request.commands[9].command = kPS2C_ReadDataPortAndCompare;
-	request.commands[9].inOrOut = kSC_Acknowledge;	
-	request.commandsCount = 10;
-    assert(request.commandsCount <= countof(request.commands));
-	_device->submitRequestAndBlock(&request);
+        TPS2Request<10> request;
+        request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[0].inOrOut =  kDP_GetMouseInformation; //sync..
+        request.commands[1].command = kPS2C_ReadDataPort;
+        request.commands[1].inOrOut =  0;
+        request.commands[2].command = kPS2C_ReadDataPort;
+        request.commands[2].inOrOut =  0;
+        request.commands[3].command = kPS2C_ReadDataPort;
+        request.commands[3].inOrOut =  0;
+        request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[4].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[5].inOrOut  = kDP_SetDefaultsAndDisable;
+        request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[6].inOrOut = cmd;
+        request.commands[7].command = kPS2C_WriteCommandPort;
+        request.commands[7].inOrOut = kCP_TransmitToMouse;
+        request.commands[8].command = kPS2C_WriteDataPort;
+        request.commands[8].inOrOut = arg;
+        request.commands[9].command = kPS2C_ReadDataPortAndCompare;
+        request.commands[9].inOrOut = kSC_Acknowledge;	
+        request.commandsCount = 10;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
 
-	getStatus(&Status);
+        getStatus(&Status);
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -576,6 +631,8 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable( bool enable )
     // It is safe to issue this request from the interrupt/completion context.
     //
 
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::setTouchPadEnable entered\n");
+    
     // (mouse enable/disable command)
     TPS2Request<5> request;
     request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -600,74 +657,76 @@ void ApplePS2ALPSGlidePoint::setTouchPadEnable( bool enable )
 IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
 {
     OSNumber * clicking = OSDynamicCast( OSNumber, dict->getObject("Clicking") );
-	OSNumber * dragging = OSDynamicCast( OSNumber, dict->getObject("Dragging") );
-	OSNumber * draglock = OSDynamicCast( OSNumber, dict->getObject("DragLock") );
+    OSNumber * dragging = OSDynamicCast( OSNumber, dict->getObject("Dragging") );
+    OSNumber * draglock = OSDynamicCast( OSNumber, dict->getObject("DragLock") );
     OSNumber * hscroll  = OSDynamicCast( OSNumber, dict->getObject("TrackpadHorizScroll") );
     OSNumber * vscroll  = OSDynamicCast( OSNumber, dict->getObject("TrackpadScroll") );
     OSNumber * eaccell  = OSDynamicCast( OSNumber, dict->getObject("HIDTrackpadScrollAcceleration") );
-
-    OSCollectionIterator* iter = OSCollectionIterator::withCollection( dict );
-    OSObject* obj;
     
-    iter->reset();
-    while ((obj = iter->getNextObject()) != NULL)
+    OSCollectionIterator* iterator = OSCollectionIterator::withCollection( dict );
+    if ( iterator )
     {
-        OSString* str = OSDynamicCast( OSString, obj );
-        OSNumber* val = OSDynamicCast( OSNumber, dict->getObject( str ) );
-        
-        if (val)
-            DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(),
-                str->getCStringNoCopy(), val->unsigned32BitValue());
-        else
-            DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(),
-                str->getCStringNoCopy());
-    }
-    if ( clicking )
-    {    
-        UInt8  newModeByteValue = clicking->unsigned32BitValue() & 0x1 ?
-                                  kTapEnabled :
-                                  0;
-
-        if (_touchPadModeByte != newModeByteValue)
+        OSSymbol* aKey;
+        while ((aKey = (OSSymbol *)iterator->getNextObject()) != NULL)
         {
-            _touchPadModeByte = newModeByteValue;
-			setTapEnable(_touchPadModeByte);
-			setProperty("Clicking", clicking);
-			setAbsoluteMode(); //restart the mouse...
+            OSObject * value = dict->getObject(aKey);
+            OSNumber* unsigned32BitOSNumber = OSDynamicCast( OSNumber, value);
+            
+            if (unsigned32BitOSNumber) {
+                DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(), aKey->getCStringNoCopy(), unsigned32BitOSNumber->unsigned32BitValue());
+            }else if (value) {
+                DEBUG_LOG("%s: Dictionary Object: %s Value: %s\n", getName(), aKey->getCStringNoCopy(), value->getMetaClass()->getClassName());
+            }else{
+                DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(), aKey->getCStringNoCopy());
+            }
         }
     }
-
-	if (dragging)
-	{
-		_dragging = dragging->unsigned32BitValue() & 0x1 ? true : false;
-		setProperty("Dragging", dragging);
-	}
-
-	if (draglock)
-	{
-		_draglock = draglock->unsigned32BitValue() & 0x1 ? true : false;
-		setProperty("DragLock", draglock);
-	}
-
+    
+    if ( clicking )
+    {
+        bool newTapEnabled =  (clicking->unsigned32BitValue() & 0x1) != 0;
+        
+        if (newTapEnabled != _tapEnabled)
+        {
+            _tapEnabled = newTapEnabled;
+            setTapEnable(_tapEnabled);
+            setProperty("Clicking", clicking);
+            setAbsoluteMode(); //restart the mouse...
+            setTouchPadEnable(true);
+        }
+    }
+    
+    if (dragging)
+    {
+        _dragging = dragging->unsigned32BitValue() & 0x1 ? true : false;
+        setProperty("Dragging", dragging);
+    }
+    
+    if (draglock)
+    {
+        _draglock = draglock->unsigned32BitValue() & 0x1 ? true : false;
+        setProperty("DragLock", draglock);
+    }
+    
     if (hscroll)
     {
         _edgehscroll = hscroll->unsigned32BitValue() & 0x1 ? true : false;
         setProperty("TrackpadHorizScroll", hscroll);
     }
-
+    
     if (vscroll)
     {
         _edgevscroll = vscroll->unsigned32BitValue() & 0x1 ? true : false;
         setProperty("TrackpadScroll", vscroll);
-        }
+    }
     if (eaccell)
     {
         _edgeaccell = eaccell->unsigned32BitValue();
-        _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75.0); 
-        _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue;
+        _edgeaccellvalue = (((double)(_edgeaccell / 1966.08)) / 75.0);
+        _edgeaccellvalue = _edgeaccellvalue == 0 ? 0.01 : _edgeaccellvalue; // same as in init
         setProperty("HIDTrackpadScrollAcceleration", eaccell);
     }
-
+    
     return super::setParamProperties(dict);
 }
 
@@ -688,7 +747,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
 
         case kPS2C_EnableDevice:
             
-            setTapEnable( _touchPadModeByte );
+            setTapEnable( _tapEnabled );
 
             //
             // Finally, we enable the trackpad itself, so that it may
@@ -706,6 +765,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
 
 void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status)
 {
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::getStatus entered\n");
     // (read command byte)
     TPS2Request<7> request;
 	request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -735,6 +795,7 @@ void ApplePS2ALPSGlidePoint::getStatus(ALPSStatus_t *status)
 
 void ApplePS2ALPSGlidePoint::getModel(ALPSStatus_t *E6,ALPSStatus_t *E7)
 {
+DEBUG_LOG("ApplePS2ALPSGlidePoint::getModel entered\n");
     // "E6 report"
     TPS2Request<9> request;
     request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
@@ -799,21 +860,28 @@ void ApplePS2ALPSGlidePoint::getModel(ALPSStatus_t *E6,ALPSStatus_t *E7)
 
 void ApplePS2ALPSGlidePoint::setAbsoluteMode()
 {
-    // (read command byte)
-    TPS2Request<6> request;
-	request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
-	request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[4].inOrOut = kDP_Enable;
-	request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-	request.commands[5].inOrOut = 0xF0; //Set poll ??!
-    request.commandsCount = 6;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
+    /*
+     * Calling this on my M4300 and D630 does nothing except disabling the trackpoint.
+     */
+    if ( _setAbsoluteWorking )
+    {
+        DEBUG_LOG("ApplePS2ALPSGlidePoint::setAbsoluteMode entered\n");
+        // (read command byte)
+        TPS2Request<6> request;
+        request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[1].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[2].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[3].inOrOut = kDP_SetDefaultsAndDisable;
+        request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[4].inOrOut = kDP_Enable;
+        request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[5].inOrOut = 0xF0; //Set poll ??!
+        request.commandsCount = 6;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
+    }
 }
