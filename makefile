@@ -34,7 +34,7 @@ update_kernelcache:
 
 .PHONY: rehabman_special_settings
 rehabman_special_settings:
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:DragLockTempMask' 262148" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	#sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:DragLockTempMask' 262148" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	#sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HPQOEM:ProBook:FingerZ' 47" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 
 .PHONY: install_debug
