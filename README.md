@@ -1,5 +1,6 @@
 ## Modified VoodooPS2Controller by RehabMan
 
+## This repo fork has mods for Lenovo T420 and Lenovo T460
 
 ### How to Install:
 
@@ -8,53 +9,14 @@ Please read and follow the important instructions for installing in the wiki:
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
 
 
-### Downloads:
-
-Downloads are available on Bitbucket:
-
-https://bitbucket.org/RehabMan/os-x-voodoo-ps2-controller/downloads
-
-Note: Archived (old) downloads are available on Google Code:
-
-https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
-
-
 ### Build Environment
 
-My build environment is currently Xcode 6.1, using SDK 10.8, targeting OS X 10.6.
-
-No other build environment is supported.
-
-
-### 32-bit Builds
-
-Currently, builds are provided only for 64-bit systems.  32-bit/64-bit FAT binaries are not provided.  But you can build your own should you need them.  I do not test 32-bit, and there may be times when the repo is broken with respect to 32-bit builds, but I do check on major releases to see if the build still works for 32-bit.
-
-Here's how to build 32-bit (universal):
-
-- xcode 4.6.3
-- open VoodooPS2Controller.xcodeproj
-- click on VoodooPS2Controller at the top of the project tree
-- select VoodooPS2Controller under Project
-- change Architectures to 'Standard (32/64-bit Intel)'
-
-probably not necessary, but a good idea to check that the targets don't have overrides:
-- multi-select all the Targets
-- check/change Architectures to 'Standard (32/64-bit Intel)'
-- build (either w/ menu or with make)
-
-Or, if you have the command line tools installed, just run:
-
-- For FAT binary (32-bit and 64-bit in one binary)
-make BITS=3264
-
-- For 32-bit only
-make BITS=32
+My build environment is currently Xcode 7.1, using SDK 10.10, targeting OS X 10.10.
 
 
 ### Source Code:
 
-The source code is maintained at the following sites:
+The original source code is maintained at the following sites:
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller
 
