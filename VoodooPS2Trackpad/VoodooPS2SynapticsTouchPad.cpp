@@ -1069,7 +1069,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     UInt32 buttons = buttonsraw;
     
     // track clickpad buttons (on pad or real) - clickpad button packets will be reparsed below
-    if( cpb ) {buttons = lastbuttons;}
     
 #ifdef SIMULATE_PASSTHRU
     if (passthru && 3 != w)
@@ -1080,7 +1079,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     if (passthru && 3 == w)
         passbuttons = packet[1] & 0x7; // mask for just M R L
 #ifdef DEBUG_VERBOSE
-IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
 #endif
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
@@ -1089,17 +1088,13 @@ IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
     buttons |= passbuttons;
     lastbuttons = buttons;
 
-    // to track for extra clickpad buttons not a clickpad click
-    if( cpb )
-    {
-        buttons |= cpb;
-        _clickbuttons=buttons;
-    }
 
     // allow middle button to be simulated with two buttons down
     if (!clickpadtype || 3 == w)
         buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
-
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: before passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+#endif
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
@@ -1109,13 +1104,13 @@ IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
         // were saved.
         UInt32 combinedButtons;
         // watch for any clickpad buttons -  may not be passthru for these type of buttons
-        if (cpb == 0)
+        if (clickpadtype)
         {
-            combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+            combinedButtons = cpb;
         }
         else
         {
-            combinedButtons = cpb;
+            combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
         }
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
@@ -1131,6 +1126,17 @@ IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
             dispatchScrollWheelEventX(scrolly, -scrollx, 0, now_abs);
             dx = dy = 0;
         }
+        if (abs(dx) < scrolldxthresh)
+        {
+            xrest = dx;
+            dx = 0;
+        }
+        if (abs(dy) < scrolldythresh)
+        {
+            yrest = dy;
+            dy = 0;
+        }
+
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
@@ -1138,10 +1144,11 @@ IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
 #endif
+        
         return;
     }
 #ifdef DEBUG_VERBOSE
-IOLog("ps2:  after passthru - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+IOLog("ps2:  after passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
 #endif
     
     // otherwise, deal with normal wmode touchpad packet
@@ -1303,7 +1310,7 @@ IOLog("ps2: 2nclickpad - x=%d, y=%d, xx=%d, yy=%d, lastx=%d, lasty=%d, lastx2=%d
         lastbuttons = buttons;
     }
 #ifdef DEBUG_VERBOSE
-IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
 #endif
     // deal with "OutsidezoneNoAction When Typing"
     if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
@@ -1321,6 +1328,9 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
     if ((0 == diszctrl && ledpresent) || 1 == diszctrl)
     {
         // deal with taps in the disable zone
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: TM1 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+#endif
         // look for a double tap inside the disable zone to enable/disable touchpad
         switch (touchmode)
         {
@@ -1425,6 +1435,9 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
 #ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
 #endif
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: TM2 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+#endif
     
 	if (z<z_finger && isTouchMode())
 	{
@@ -1467,6 +1480,10 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
                         buttons&=~0x7;
                         dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
                         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+#ifdef DEBUG_VERBOSE
+                        IOLog("ps2: EventX dx=%d, dy=%d, buttons=%d\n", 0, 0, buttons);
+#endif
+
                     }
                     if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
@@ -1508,6 +1525,9 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
                 touchmode=MODE_DRAGNOTOUCH;
                 if (!draglock && !draglocktemp)
                 {
+#ifdef DEBUG_VERBOSE
+IOLog("tm1: cancel Timer\n");
+#endif
                     cancelTimer(dragTimer);
                     setTimerTimeout(dragTimer, dragexitdelay);
                 }
@@ -1548,6 +1568,9 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
     int tm2 = touchmode;
 #endif
     int dx = 0, dy = 0;
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: TM3 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+#endif
     
 	switch (touchmode)
 	{
@@ -1794,6 +1817,9 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
     {
         if (dragTimer)
+#ifdef DEBUG_VERBOSE
+IOLog("tm2: cancel Timer\n");
+#endif
             cancelTimer(dragTimer);
 		touchmode=MODE_DRAGLOCK;
     }
@@ -1836,10 +1862,21 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, pb=%d, cpb=%d\n", butto
         scrollrest=0;
     }
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
-		touchmode=MODE_MOVE;
+    {
+        touchmode=MODE_MOVE;
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: Near END z=%d, w=%d, mode=%d, buttons=%d\n", z, w, touchmode, buttons);
+#endif
+        
+    }
+		
     
     // dispatch dx/dy and current button status
     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: EventX dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
+#endif
+
     
     // always save last seen position for calculating deltas later
 	lastx=x;
