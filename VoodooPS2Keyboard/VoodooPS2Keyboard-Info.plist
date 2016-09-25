@@ -188,15 +188,9 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>
-							//8CbgAAAAACWwEZ
-							</data>
-							<data>
-							//8C7gAAAAAC2wGZ
-							</data>
-							<data>
-							//8C7gAAAAABmQLb
-							</data>
+							<data>//8CbgAAAAACWwEZ</data>
+							<data>//8C7gAAAAAC2wGZ</data>
+							<data>//8C7gAAAAABmQLb</data>
 						</array>
 						<key>MaximumMacroTime</key>
 						<integer>35000000</integer>
@@ -258,9 +252,9 @@
 					<key>ActionSwipeDown</key>
 					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
 					<key>ActionSwipeLeft</key>
-					<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
+					<string>37 d, 21 d, 21 u, 37 u</string>
 					<key>ActionSwipeRight</key>
-					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+					<string>37 d, 1e d, 1e u, 37 u</string>
 					<key>ActionSwipeUp</key>
 					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
 					<key>Breakless PS2</key>
@@ -558,7 +552,7 @@
 				</dict>
 				<key>LENOVO</key>
 				<dict>
-					<key>T420</key>
+					<key>T420-not-used-for-Sierra</key>
 					<dict>
 						<key>Custom ADB Map</key>
 						<array>

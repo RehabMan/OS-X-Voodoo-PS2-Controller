@@ -1,17 +1,20 @@
-## Modified VoodooPS2Controller by RehabMan
+## This repo is a fork of VoodooPS2Controller by RehabMan
 
-## This repo fork has mods for Lenovo T420 and Lenovo T460
+## The mods are specific to the Lenovo T420 and Lenovo T460 ThinkPad models
+The T420 mods are settings in Info.plist
+The T460 mods are code changes to support the new ClickPad buttons as well as the 3 physical buttons
 
+### Current Build Environment
+
+My build environment is currently Xcode 8, using SDK 10.11, targeting OS X 10.11.
+
+
+### --------------------- From RehabMan -----------------------------------------
 ### How to Install:
 
 Please read and follow the important instructions for installing in the wiki:
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
-
-
-### Build Environment
-
-My build environment is currently Xcode 7.1, using SDK 10.10, targeting OS X 10.10.
 
 
 ### Source Code:
