@@ -54,6 +54,11 @@ install: install_kext install_daemon
 .PHONY: install_kext
 install_kext:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
+	find . -path *.DS_Store -delete
+	find . -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
+	chmod +x /tmp/org.voodoo.rm.dsym.sh
+	/tmp/org.voodoo.rm.dsym.sh
+	rm /tmp/org.voodoo.rm.dsym.sh
 	sudo cp -R $(BUILDDIR)/Release/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
 	make rehabman_special_settings

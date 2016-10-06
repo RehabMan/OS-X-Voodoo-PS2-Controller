@@ -1126,17 +1126,6 @@ IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", butto
             dispatchScrollWheelEventX(scrolly, -scrollx, 0, now_abs);
             dx = dy = 0;
         }
-        if (abs(dx) < scrolldxthresh)
-        {
-            xrest = dx;
-            dx = 0;
-        }
-        if (abs(dy) < scrolldythresh)
-        {
-            yrest = dy;
-            dy = 0;
-        }
-
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
@@ -1265,7 +1254,7 @@ IOLog("ps2:  after passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", butto
         {
             clickbuttons = bp;
         }
-            
+        
         if (!_clickbuttons && clickbuttons)
         {
             // use primary packet by default
@@ -1278,12 +1267,14 @@ IOLog("ps2:  after passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", butto
                 xx = lastx2;
                 yy = lasty2;
             }
+#ifdef DEBUG_VERBOSE
+IOLog("ps2: 2nclickpad - clickedprimary=%d, tracksecondary=%d, _extendedwmode=%d\n", clickedprimary, tracksecondary, _extendedwmode);
+#endif
 DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             
             // change to right click if in right click zone, or was two finger "click"
             // already figured out L/R/M for real buttons above
-            if (!cpb)
-            {
+
                 if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
                 || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
                 {
@@ -1292,7 +1283,6 @@ DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%
                 }
                 else
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
-            }
             
 #ifdef DEBUG_VERBOSE
 IOLog("ps2: 2nclickpad - clickbuttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", clickbuttons, _clickbuttons, lastbuttons, cpb, passbuttons);
@@ -1329,7 +1319,7 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", butto
     {
         // deal with taps in the disable zone
 #ifdef DEBUG_VERBOSE
-        IOLog("ps2: TM1 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+        IOLog("ps2: TM1 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
 #endif
         // look for a double tap inside the disable zone to enable/disable touchpad
         switch (touchmode)
@@ -1436,7 +1426,7 @@ IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", butto
     int tm1 = touchmode;
 #endif
 #ifdef DEBUG_VERBOSE
-    IOLog("ps2: TM2 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+    IOLog("ps2: TM2 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
 #endif
     
 	if (z<z_finger && isTouchMode())
@@ -1569,7 +1559,7 @@ IOLog("tm1: cancel Timer\n");
 #endif
     int dx = 0, dy = 0;
 #ifdef DEBUG_VERBOSE
-    IOLog("ps2: TM3 y=%d z=%d w=%d mode=%d, buttons=%d\n", y, z, w, touchmode, buttons);
+    IOLog("ps2: TM3 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
 #endif
     
 	switch (touchmode)
@@ -2032,6 +2022,41 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             // ClickPad puts its "button" presses in a different location
             // And for single button ClickPad we have to provide a way to simulate right clicks
             int clickbuttons = packet[3] & 0x3;
+            
+            // parse packets for buttons - TrackPoint Buttons may not be passthru
+            int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+            int lb = packet[4] & 0x3; // 1 for left real button
+            int rb = packet[5] & 0x3; // 1 for right real button
+            
+            if (bp == 2)
+            {
+                if      ( lb == 1 )
+                { // left click
+                    clickbuttons = 0x1;
+                }
+                else if ( rb == 1 )
+                { // right click
+                    clickbuttons = 0x2;
+                }
+                else if ( lb == 2 )
+                { // middle click
+                    clickbuttons = 0x4;
+                    //_mbuttonstate = STATE_MIDDLE;
+                }
+                else
+                {
+                    clickbuttons = 0x0;
+                    //_mbuttonstate = STATE_NOBUTTONS;
+                }
+                cpb = clickbuttons;
+                buttons=clickbuttons;
+                setClickButtons(clickbuttons);
+            }
+            else
+            {
+                clickbuttons = bp;
+            }
+
             if (!_clickbuttons && clickbuttons)
             {
                 // change to right click if in right click zone

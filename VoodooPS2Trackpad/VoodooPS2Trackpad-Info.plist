@@ -378,10 +378,10 @@
 				<key>LENOVO</key>
 				<dict>
 					<key>T420</key>
-					<string>ThinkPad1</string>
+					<string>TrackPad</string>
 					<key>T460</key>
-					<string>ThinkPad2</string>
-					<key>ThinkPad1</key>
+					<string>ClickPad</string>
+					<key>TrackPad</key>
 					<dict>
 						<key>BogusDeltaThreshX</key>
 						<integer>400</integer>
@@ -400,24 +400,28 @@
 						<key>MomentumScrollThreshY</key>
 						<integer>16</integer>
 						<key>MouseMultiplierX</key>
-						<integer>6</integer>
+						<integer>8</integer>
 						<key>MouseMultiplierY</key>
-						<integer>6</integer>
+						<integer>8</integer>
 						<key>MultiFingerHorizontalDivisor</key>
-						<integer>2</integer>
+						<integer>4</integer>
 						<key>MultiFingerVerticalDivisor</key>
-						<integer>2</integer>
+						<integer>4</integer>
 						<key>Resolution</key>
-						<integer>2800</integer>
+						<integer>3200</integer>
 						<key>ScrollDeltaThreshX</key>
-						<integer>10</integer>
+						<integer>20</integer>
 						<key>ScrollDeltaThreshY</key>
-						<integer>10</integer>
+						<integer>20</integer>
 						<key>ScrollResolution</key>
-						<integer>2800</integer>
+						<integer>3200</integer>
 					</dict>
-					<key>ThinkPad2</key>
+					<key>ClickPad</key>
 					<dict>
+						<key>BogusDeltaThreshX</key>
+						<integer>400</integer>
+						<key>BogusDeltaThreshY</key>
+						<integer>350</integer>
 						<key>DragLockTempMask</key>
 						<integer>262148</integer>
 						<key>DynamicEWMode</key>
@@ -425,11 +429,13 @@
 						<key>FakeMiddleButton</key>
 						<false/>
 						<key>FingerZ</key>
-						<integer>47</integer>
+						<integer>25</integer>
 						<key>MouseMultiplierX</key>
 						<integer>2</integer>
 						<key>MouseMultiplierY</key>
 						<integer>2</integer>
+						<key>EdgeBottom</key>
+						<integer>1100</integer>
 					</dict>
 				</dict>
 			</dict>
