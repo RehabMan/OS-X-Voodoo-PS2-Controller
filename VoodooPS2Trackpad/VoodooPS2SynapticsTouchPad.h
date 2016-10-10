@@ -394,6 +394,8 @@ private:
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     void setParamPropertiesGated(OSDictionary* dict);
+    
+    int trackPointOverride = 0;
 
 protected:
 	virtual IOItemCount buttonCount();

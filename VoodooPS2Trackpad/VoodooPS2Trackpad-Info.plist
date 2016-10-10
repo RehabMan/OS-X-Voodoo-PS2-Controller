@@ -223,13 +223,13 @@
 					<key>DisableLEDUpdating</key>
 					<false/>
 					<key>MouseMultiplierX</key>
-					<integer>20</integer>
+					<integer>2</integer>
 					<key>MouseMultiplierY</key>
-					<integer>20</integer>
+					<integer>2</integer>
 					<key>MouseScrollMultiplierX</key>
-					<integer>20</integer>
+					<integer>1</integer>
 					<key>MouseScrollMultiplierY</key>
-					<integer>20</integer>
+					<integer>1</integer>
 					<key>MouseMiddleScroll</key>
 					<true/>
 					<key>WakeDelay</key>

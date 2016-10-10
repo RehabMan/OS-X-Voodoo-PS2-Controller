@@ -1061,6 +1061,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     UInt32 buttonsraw = packet[0] & 0x03; // mask for just R L
     UInt32 buttons = buttonsraw;
     
+    if(trackPointOverride > 0) {buttons == lastbuttons;}
 #ifdef SIMULATE_PASSTHRU
     if (passthru && 3 != w)
         trackbuttons = buttons;
@@ -1075,11 +1076,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // otherwise, you might see double clicks that aren't there
     buttons |= passbuttons;
     lastbuttons = buttons;
+    
+    if (trackPointOverride > 0) {buttons = trackPointOverride;}
 
     // allow middle button to be simulated with two buttons down
-    if (!clickpadtype || 3 == w)
+    if (!clickpadtype || 3 == w || buttons == 3)
         buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
 
+    
+    
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
@@ -1087,11 +1092,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
         // were saved.
-        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        UInt32 combinedButtons = buttons;
+        if (trackPointOverride == 0) {
+            combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        }
+        else {
+            combinedButtons = trackPointOverride;
+        }
+        
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
-        if (mousemiddlescroll && (packet[1] & 0x4)) // only for physical middle button
+        if (mousemiddlescroll && (combinedButtons==3)) // only for physical middle button
         {
             // middle button treats deltas for scrolling
             SInt32 scrollx = 0, scrolly = 0;
@@ -1102,6 +1114,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             dispatchScrollWheelEventX(scrolly, -scrollx, 0, now_abs);
             dx = dy = 0;
         }
+        if (combinedButtons == 3) {combinedButtons = 0;}
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
@@ -1111,6 +1124,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #endif
         return;
     }
+    
+    if (buttons == 3 && trackPointOverride == 3) {buttons == 0;}
     
     // otherwise, deal with normal wmode touchpad packet
     int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
@@ -1204,17 +1219,60 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 xx = lastx2;
                 yy = lasty2;
             }
-            DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
-            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
-                || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
-            {
-                DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
-                clickbuttons = 0x2;
+            if (packet[3] == 194) {
+                if (packet[4] == 1){ //Left click
+                    clickbuttons = 0x1;
+                    trackPointOverride = 1;
+                     _clickbuttons = clickbuttons;
+                    if (!clickbuttons)
+                        _clickbuttons = 0;
+                    buttons |= _clickbuttons;
+                    lastbuttons = buttons;
+                    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                    return;
+                }
+                else if (packet[5] == 1){ //right click
+                    clickbuttons = 0x2;
+                    trackPointOverride = 2;
+                     _clickbuttons = clickbuttons;
+                    if (!clickbuttons)
+                        _clickbuttons = 0;
+                    buttons |= _clickbuttons;
+                    lastbuttons = buttons;
+                    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                    return;
+                }
+                else if (packet[4] == 2) { //middle click - todo
+                    trackPointOverride = 3;
+                    _mbuttonstate = STATE_MIDDLE;
+                    return;
+                }
+                else {
+                    clickbuttons = 0x0;
+                     _clickbuttons = clickbuttons;
+                    trackPointOverride = 0;
+                    if (!clickbuttons)
+                        _clickbuttons = 0;
+                    buttons = _clickbuttons;
+                    lastbuttons = buttons;
+                    _mbuttonstate = STATE_NOBUTTONS;
+                    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                    return;
+                }
             }
             else
-                DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
+            {
+                if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
+                                         || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
+                {
+                    DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
+                    clickbuttons = 0x2;
+                }
+                else
+                    DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
             setClickButtons(clickbuttons);
+            }
         }
         // always clear _clickbutton state, when ClickPad is not clicked
         if (!clickbuttons)
@@ -1755,6 +1813,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		touchmode=MODE_MOVE;
     
     // dispatch dx/dy and current button status
+    //jcsnider: The if statement stops the dispatch call from spamming a 'click' equalivant when trying to scroll.
+    //jcsnider: Depsite the check for scrolling I was still getting a clicking action and the logs were outputting that buttons = 4 which shouldn't happen on the X1 Carbon anyways.
+    if (trackPointOverride == 3) {buttons = 0;}
     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     
     // always save last seen position for calculating deltas later
