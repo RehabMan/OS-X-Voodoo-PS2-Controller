@@ -289,7 +289,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
     // load settings specific to Platform Profile
     setParamPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
     // for diagnostics...
     UInt8 buf3[3];
@@ -2460,13 +2460,28 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
     // lowbit config items
-	for (int i = 0; i < countof(lowbitvars); i++)
-		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+    for (int i = 0; i < countof(lowbitvars); i++)
+        if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
-			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            *lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
+        else if ((bl=OSDynamicCast(OSBoolean, config->getObject(lowbitvars[i].name))))
+        {
+            *lowbitvars[i].var = bl->isTrue();
+            setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
+        }
     
+    if ((num = OSDynamicCast(OSNumber, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = num->unsigned32BitValue() ? true : false;
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
+    }
+    else if ((bl = OSDynamicCast(OSBoolean, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = bl->isTrue();
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
+    }
     // special case for MaxDragTime (which is really max time for a double-click)
     // we can let it go no more than 230ms because otherwise taps on
     // the menu bar take too long if drag mode is enabled.  The code in that case
