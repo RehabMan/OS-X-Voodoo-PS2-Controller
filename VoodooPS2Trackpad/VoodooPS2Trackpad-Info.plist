@@ -255,7 +255,7 @@
 					<key>SmoothInput</key>
 					<true/>
 					<key>UnsmoothInput</key>
-					<true/>
+					<false/>
 					<key>SkipPassThrough</key>
 					<false/>
 					<key>TapThresholdX</key>
