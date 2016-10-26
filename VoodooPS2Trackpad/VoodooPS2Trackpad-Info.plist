@@ -331,7 +331,7 @@
 					<key>UnitsPerMMY</key>
 					<integer>50</integer>
 					<key>UnsmoothInput</key>
-					<true/>
+					<false/>
 					<key>UseHighRate</key>
 					<true/>
 					<key>VerticalScrollDivisor</key>
