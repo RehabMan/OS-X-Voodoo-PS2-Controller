@@ -31,7 +31,7 @@
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
+//#define DEBUG_VERBOSE
 //#define PACKET_DEBUG
 #endif
 
@@ -1044,8 +1044,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: BEGIN  packets= %d %d %d %d %d %d w=%d\n",packet[0],packet[1],packet[2],packet[3],packet[4],packet[5],w);
+#endif
+    
     if (_extendedwmode && 2 == w)
     {
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: EWMODE\n");
+#endif
         // deal with extended W mode encapsulated packet
         dispatchEventsWithPacketEW(packet, packetSize);
         return;
@@ -1061,6 +1068,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     UInt32 buttonsraw = packet[0] & 0x03; // mask for just R L
     UInt32 buttons = buttonsraw;
     
+    // track clickpad buttons (on pad or real) - clickpad button packets will be reparsed below
+    
 #ifdef SIMULATE_PASSTHRU
     if (passthru && 3 != w)
         trackbuttons = buttons;
@@ -1069,17 +1078,23 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // deal with pass through packet buttons
     if (passthru && 3 == w)
         passbuttons = packet[1] & 0x7; // mask for just M R L
-    
+#ifdef DEBUG_VERBOSE
+IOLog("ps2:  enter top      - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+#endif
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
+    
     buttons |= passbuttons;
     lastbuttons = buttons;
+
 
     // allow middle button to be simulated with two buttons down
     if (!clickpadtype || 3 == w)
         buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
-
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: before passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+#endif
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
@@ -1087,7 +1102,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
         // were saved.
-        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        UInt32 combinedButtons;
+        // watch for any clickpad buttons -  may not be passthru for these type of buttons
+        if (clickpadtype)
+        {
+            combinedButtons = cpb;
+        }
+        else
+        {
+            combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        }
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
@@ -1109,8 +1133,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
 #endif
+        
         return;
     }
+#ifdef DEBUG_VERBOSE
+IOLog("ps2:  after passthru - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+#endif
     
     // otherwise, deal with normal wmode touchpad packet
     int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
@@ -1239,16 +1267,28 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 xx = lastx2;
                 yy = lasty2;
             }
-            DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
+#ifdef DEBUG_VERBOSE
+IOLog("ps2: 2nclickpad - clickedprimary=%d, tracksecondary=%d, _extendedwmode=%d\n", clickedprimary, tracksecondary, _extendedwmode);
+#endif
+DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
+            
             // change to right click if in right click zone, or was two finger "click"
-            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
+            // already figured out L/R/M for real buttons above
+
+                if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
                 || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
-            {
+                {
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
-            }
-            else
+                }
+                else
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
+            
+#ifdef DEBUG_VERBOSE
+IOLog("ps2: 2nclickpad - clickbuttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", clickbuttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+IOLog("ps2: 2nclickpad - x=%d, y=%d, xx=%d, yy=%d, lastx=%d, lasty=%d, lastx2=%d, lasty2=%d\n", x,y,xx,yy,lastx,lasty,lastx2,lasty2);
+#endif
+
             setClickButtons(clickbuttons);
         }
         // always clear _clickbutton state, when ClickPad is not clicked
@@ -1259,7 +1299,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         buttons |= _clickbuttons;
         lastbuttons = buttons;
     }
-    
+#ifdef DEBUG_VERBOSE
+IOLog("ps2:  after clickpad - buttons=%d, _cb=%d, lb=%d, cpb=%d, pb=%d\n", buttons, _clickbuttons, lastbuttons, cpb, passbuttons);
+#endif
     // deal with "OutsidezoneNoAction When Typing"
     if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
         (x < zonel || x > zoner || y < zoneb || y > zonet))
@@ -1276,6 +1318,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     if ((0 == diszctrl && ledpresent) || 1 == diszctrl)
     {
         // deal with taps in the disable zone
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: TM1 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
+#endif
         // look for a double tap inside the disable zone to enable/disable touchpad
         switch (touchmode)
         {
@@ -1380,6 +1425,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
 #endif
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: TM2 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
+#endif
     
 	if (z<z_finger && isTouchMode())
 	{
@@ -1395,7 +1443,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         else
             IOLog("ps2: no time/dy history\n");
 #endif
-        
         // check for scroll momentum start
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
         {
@@ -1425,6 +1472,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         buttons&=~0x7;
                         dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
                         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+#ifdef DEBUG_VERBOSE
+                        IOLog("ps2: EventX dx=%d, dy=%d, buttons=%d\n", 0, 0, buttons);
+#endif
+
                     }
                     if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
@@ -1466,6 +1517,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 touchmode=MODE_DRAGNOTOUCH;
                 if (!draglock && !draglocktemp)
                 {
+#ifdef DEBUG_VERBOSE
+IOLog("tm1: cancel Timer\n");
+#endif
                     cancelTimer(dragTimer);
                     setTimerTimeout(dragTimer, dragexitdelay);
                 }
@@ -1481,8 +1535,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	}
     
     // cancel pre-drag mode if second tap takes too long
-	if (touchmode==MODE_PREDRAG && now_ns-untouchtime >= maxdragtime)
-		touchmode=MODE_NOTOUCH;
+    if (touchmode==MODE_PREDRAG && now_ns-untouchtime >= maxdragtime)
+    {
+        touchmode=MODE_NOTOUCH;
+    }
+		
 
     // Note: This test should probably be done somewhere else, especially if to
     // implement more gestures in the future, because this information we are
@@ -1503,6 +1560,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int tm2 = touchmode;
 #endif
     int dx = 0, dy = 0;
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: TM3 x=%d y=%d z=%d w=%d mode=%d, buttons=%d\n", x, y, z, w, touchmode, buttons);
+#endif
     
 	switch (touchmode)
 	{
@@ -1749,6 +1809,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
     {
         if (dragTimer)
+#ifdef DEBUG_VERBOSE
+IOLog("tm2: cancel Timer\n");
+#endif
             cancelTimer(dragTimer);
 		touchmode=MODE_DRAGLOCK;
     }
@@ -1791,10 +1854,21 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         scrollrest=0;
     }
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
-		touchmode=MODE_MOVE;
+    {
+        touchmode=MODE_MOVE;
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: Near END z=%d, w=%d, mode=%d, buttons=%d\n", z, w, touchmode, buttons);
+#endif
+        
+    }
+		
     
     // dispatch dx/dy and current button status
     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: EventX dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
+#endif
+
     
     // always save last seen position for calculating deltas later
 	lastx=x;
@@ -1802,7 +1876,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     lastf=f;
     
 #ifdef DEBUG_VERBOSE
-    IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
+    IOLog("ps2: END dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
 #endif
 }
 

@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}a</string>
+	<string>${MODULE_VERSION}b</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -60,9 +60,9 @@
 				<key>Default</key>
 				<dict>
 					<key>WakeDelay</key>
-					<integer>10</integer>
+					<integer>0</integer>
 					<key>MouseWakeFirst</key>
-					<false/>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
