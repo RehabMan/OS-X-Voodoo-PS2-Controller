@@ -54,25 +54,25 @@ void* _org_rehabman_dontstrip_[] =
 };
 
 // =============================================================================
-// ApplePS2SynapticsTouchPad Class Implementation
+// AppleUSBMultitouchDriver Class Implementation
 //
 
-OSDefineMetaClassAndStructors(ApplePS2SynapticsTouchPad, IOHIPointing);
+OSDefineMetaClassAndStructors(AppleUSBMultitouchDriver, IOHIPointing);
 
-UInt32 ApplePS2SynapticsTouchPad::deviceType()
+UInt32 AppleUSBMultitouchDriver::deviceType()
 { return NX_EVS_DEVICE_TYPE_MOUSE; };
 
-UInt32 ApplePS2SynapticsTouchPad::interfaceID()
+UInt32 AppleUSBMultitouchDriver::interfaceID()
 { return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
 
-IOItemCount ApplePS2SynapticsTouchPad::buttonCount() { return _buttonCount; };
-IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16; };
+IOItemCount AppleUSBMultitouchDriver::buttonCount() { return _buttonCount; };
+IOFixed     AppleUSBMultitouchDriver::resolution()  { return _resolution << 16; };
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
+bool AppleUSBMultitouchDriver::init(OSDictionary * dict)
 {
     //
     // Initialize this object's minimal state. This is invoked right after this
@@ -252,9 +252,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
+AppleUSBMultitouchDriver* AppleUSBMultitouchDriver::probe(IOService * provider, SInt32 * score)
 {
-    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
+    DEBUG_LOG("AppleUSBMultitouchDriver::probe entered...\n");
     
     //
     // The driver has been instructed to verify the presence of the actual
@@ -355,14 +355,14 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     
     _device = 0;
 
-    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe leaving.\n");
+    DEBUG_LOG("AppleUSBMultitouchDriver::probe leaving.\n");
     
     return success ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::queryCapabilities()
+void AppleUSBMultitouchDriver::queryCapabilities()
 {
     // get TouchPad general capabilities
     UInt8 buf3[3];
@@ -482,7 +482,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 #endif
 }
 
-bool ApplePS2SynapticsTouchPad::start( IOService * provider )
+bool AppleUSBMultitouchDriver::start( IOService * provider )
 {
     //
     // The driver has been instructed to start. This is called after a
@@ -537,7 +537,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     if (_buttonCount >= 3)
     {
-        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onButtonTimer));
+        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &AppleUSBMultitouchDriver::onButtonTimer));
         if (!_buttonTimer)
         {
             _device->release();
@@ -551,7 +551,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     // Setup scrolltimer event source
     //
-    scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
+    scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &AppleUSBMultitouchDriver::onScrollTimer));
     if (scrollTimer)
         pWorkLoop->addEventSource(scrollTimer);
     
@@ -560,7 +560,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     if (dragexitdelay)
     {
-        dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onDragTimer));
+        dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &AppleUSBMultitouchDriver::onDragTimer));
         if (dragTimer)
             pWorkLoop->addEventSource(dragTimer);
     }
@@ -589,8 +589,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     
     _device->installInterruptAction(this,
-                                    OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2SynapticsTouchPad::interruptOccurred),
-                                    OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SynapticsTouchPad::packetReady));
+                                    OSMemberFunctionCast(PS2InterruptAction,this,&AppleUSBMultitouchDriver::interruptOccurred),
+                                    OSMemberFunctionCast(PS2PacketAction, this, &AppleUSBMultitouchDriver::packetReady));
     _interruptHandlerInstalled = true;
     
     // now safe to allow other threads
@@ -601,7 +601,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 	//
     
 	_device->installPowerControlAction( this,
-        OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SynapticsTouchPad::setDevicePowerState) );
+        OSMemberFunctionCast(PS2PowerControlAction, this, &AppleUSBMultitouchDriver::setDevicePowerState) );
 	_powerControlHandlerInstalled = true;
     
     //
@@ -609,7 +609,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     
     _device->installMessageAction( this,
-        OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2SynapticsTouchPad::receiveMessage));
+        OSMemberFunctionCast(PS2MessageAction, this, &AppleUSBMultitouchDriver::receiveMessage));
     _messageHandlerInstalled = true;
     
     // get IOACPIPlatformDevice for Device (PS2M)
@@ -631,7 +631,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::stop( IOService * provider )
+void AppleUSBMultitouchDriver::stop( IOService * provider )
 {
     DEBUG_LOG("%s: stop called\n", getName());
     
@@ -725,7 +725,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::onScrollTimer(void)
+void AppleUSBMultitouchDriver::onScrollTimer(void)
 {
     //
     // This will be invoked by our workloop timer event source to implement
@@ -763,7 +763,7 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
+PS2InterruptResult AppleUSBMultitouchDriver::interruptOccurred(UInt8 data)
 {
     //
     // This will be invoked automatically from our device when asynchronous
@@ -832,7 +832,7 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
     return kPS2IR_packetBuffering;
 }
 
-void ApplePS2SynapticsTouchPad::packetReady()
+void AppleUSBMultitouchDriver::packetReady()
 {
     // empty the ring buffer, dispatching each packet...
     while (_ringBuffer.count() >= kPacketLength)
@@ -854,7 +854,7 @@ void ApplePS2SynapticsTouchPad::packetReady()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::onButtonTimer(void)
+void AppleUSBMultitouchDriver::onButtonTimer(void)
 {
 	uint64_t now_abs;
 	clock_get_uptime(&now_abs);
@@ -862,7 +862,7 @@ void ApplePS2SynapticsTouchPad::onButtonTimer(void)
     middleButton(lastbuttons, now_abs, fromTimer);
 }
 
-UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
+UInt32 AppleUSBMultitouchDriver::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
     if (!_fakemiddlebutton || _buttonCount <= 2 || (ignoreall && fromTrackpad == from))
         return buttons;
@@ -984,7 +984,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::setTouchPadEnable( bool enable )
+void AppleUSBMultitouchDriver::setTouchPadEnable( bool enable )
 {
     //
     // Instructs the trackpad to start or stop the reporting of data packets.
@@ -1002,7 +1002,7 @@ void ApplePS2SynapticsTouchPad::setTouchPadEnable( bool enable )
 
 // - -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SynapticsTouchPad::getTouchPadStatus(  UInt8 buf3[] )
+bool AppleUSBMultitouchDriver::getTouchPadStatus(  UInt8 buf3[] )
 {
     TPS2Request<6> request;
     request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
@@ -1031,7 +1031,7 @@ bool ApplePS2SynapticsTouchPad::getTouchPadStatus(  UInt8 buf3[] )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
+bool AppleUSBMultitouchDriver::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
 {
     TPS2Request<14> request;
 
@@ -1086,7 +1086,7 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::initTouchPad()
+void AppleUSBMultitouchDriver::initTouchPad()
 {
     //
     // Clear packet buffer pointer to avoid issues caused by
@@ -1119,7 +1119,7 @@ void ApplePS2SynapticsTouchPad::initTouchPad()
     updateTouchpadLED();
 }
 
-bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
+bool AppleUSBMultitouchDriver::setTouchpadModeByte()
 {
     if (!_dynamicEW)
     {
@@ -1129,7 +1129,7 @@ bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
     return setTouchPadModeByte(_touchPadModeByte);
 }
 
-bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
+bool AppleUSBMultitouchDriver::setTouchPadModeByte(UInt8 modeByteValue)
 {
     // make sure we are not early in the initialization...
     if (!_device)
@@ -1287,7 +1287,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 }
 
 
-void ApplePS2SynapticsTouchPad::setClickButtons(UInt32 clickButtons)
+void AppleUSBMultitouchDriver::setClickButtons(UInt32 clickButtons)
 {
     UInt32 oldClickButtons = _clickbuttons;
     _clickbuttons = clickButtons;
@@ -1296,7 +1296,7 @@ void ApplePS2SynapticsTouchPad::setClickButtons(UInt32 clickButtons)
         setModeByte();
 }
 
-bool ApplePS2SynapticsTouchPad::setModeByte()
+bool AppleUSBMultitouchDriver::setModeByte()
 {
     if (!_dynamicEW || !_extendedwmodeSupported)
         return false;
@@ -1308,7 +1308,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte()
 }
 
 // simplified setModeByte for switching between normal mode and EW mode
-bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
+bool AppleUSBMultitouchDriver::setModeByte(UInt8 modeByteValue)
 {
     // make sure we are not early in the initialization...
     if (!_device)
@@ -1357,7 +1357,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
+void AppleUSBMultitouchDriver::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
 		return;
@@ -1616,13 +1616,13 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     }
 }
 
-IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
+IOReturn AppleUSBMultitouchDriver::setParamProperties(OSDictionary* dict)
 {
     ////IOReturn result = super::IOHIDevice::setParamProperties(dict);
     if (_cmdGate)
     {
         // syncronize through workloop...
-        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
+        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &AppleUSBMultitouchDriver::setParamPropertiesGated), dict);
         setParamPropertiesGated(dict);
     }
     
@@ -1630,13 +1630,13 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
     ////return result;
 }
 
-IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
+IOReturn AppleUSBMultitouchDriver::setProperties(OSObject *props)
 {
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
     if (dict && _cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &AppleUSBMultitouchDriver::setParamPropertiesGated), dict);
     }
     
 	return super::setProperties(props);
@@ -1644,7 +1644,7 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
+void AppleUSBMultitouchDriver::setDevicePowerState( UInt32 whatToDo )
 {
     switch ( whatToDo )
     {
@@ -1672,7 +1672,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
+void AppleUSBMultitouchDriver::receiveMessage(int message, void* data)
 {
     //
     // Here is where we receive messages from the keyboard driver
@@ -1825,7 +1825,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
 // Signed-off-by: Takashi Iwai <tiwai@suse.de>
 //
 
-void ApplePS2SynapticsTouchPad::updateTouchpadLED()
+void AppleUSBMultitouchDriver::updateTouchpadLED()
 {
     if (ledpresent && !noled)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
@@ -1842,7 +1842,7 @@ void ApplePS2SynapticsTouchPad::updateTouchpadLED()
     }
 }
 
-bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
+bool AppleUSBMultitouchDriver::setTouchpadLED(UInt8 touchLED)
 {
     TPS2Request<12> request;
     
