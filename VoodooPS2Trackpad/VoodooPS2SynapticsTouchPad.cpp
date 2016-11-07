@@ -116,8 +116,13 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wlimit=9;
 	wvdivisor=30;
 	whdivisor=30;
-	clicking=true;
-	dragging=true;
+	clicking=false;
+	dragging=false;
+    threefingerdrag=false;
+    threefingervertswipe=false;
+    threefingerhorizswipe=false;
+    notificationcenter=false;
+    rightclick_corner=0;
 	draglock=false;
     draglocktemp=0;
 	hscroll=false;
@@ -289,7 +294,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
     // load settings specific to Platform Profile
     setParamPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
     // for diagnostics...
     UInt8 buf3[3];
@@ -1241,8 +1246,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
             DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
-            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
-                || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
+            if (isFingerTouch(z) && (
+                                     ((rightclick_corner == 2 && isInRightClickZone(xx, yy)) ||
+                                      (rightclick_corner == 1 && isInLeftClickZone(xx, yy)))
+                                     || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
             {
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
@@ -1595,40 +1602,42 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     break;
                         
                 case 1: // three finger
-                    xmoved += lastx-x;
-                    ymoved += y-lasty;
-                    // dispatching 3 finger movement
-                    if (ymoved > swipedy && !inSwipeUp)
-                    {
-                        inSwipeUp=1;
-                        inSwipeDown=0;
-                        ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
-                        break;
-                    }
-                    if (ymoved < -swipedy && !inSwipeDown)
-                    {
-                        inSwipeDown=1;
-                        inSwipeUp=0;
-                        ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
-                        break;
-                    }
-                    if (xmoved < -swipedx && !inSwipeRight)
-                    {
-                        inSwipeRight=1;
-                        inSwipeLeft=0;
-                        xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
-                        break;
-                    }
-                    if (xmoved > swipedx && !inSwipeLeft)
-                    {
-                        inSwipeLeft=1;
-                        inSwipeRight=0;
-                        xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
-                        break;
+                    if (threefingerhorizswipe || threefingervertswipe) {
+                        xmoved += lastx-x;
+                        ymoved += y-lasty;
+                        // dispatching 3 finger movement
+                        if (ymoved > swipedy && !inSwipeUp && threefingervertswipe)
+                        {
+                            inSwipeUp=1;
+                            inSwipeDown=0;
+                            ymoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                            break;
+                        }
+                        if (ymoved < -swipedy && !inSwipeDown && threefingervertswipe)
+                        {
+                            inSwipeDown=1;
+                            inSwipeUp=0;
+                            ymoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                            break;
+                        }
+                        if (xmoved < -swipedx && !inSwipeRight && threefingerhorizswipe)
+                        {
+                            inSwipeRight=1;
+                            inSwipeLeft=0;
+                            xmoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
+                            break;
+                        }
+                        if (xmoved > swipedx && !inSwipeLeft && threefingerhorizswipe)
+                        {
+                            inSwipeLeft=1;
+                            inSwipeRight=0;
+                            xmoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
+                            break;
+                        }
                     }
             }
             break;
@@ -2455,6 +2464,10 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"UnitsPerMMY",                     &yupmm},
         {"ScrollDeltaThreshX",              &scrolldxthresh},
         {"ScrollDeltaThreshY",              &scrolldythresh},
+        {"TrackpadCornerSecondaryClick",    &rightclick_corner},
+        {"TrackpadThreeFingerVertSwipeGesture", &threefingervertswipe},
+        {"TrackpadThreeFingerHorizSwipeGesture", &threefingerhorizswipe},
+        {"TrackpadTwoFingerFromRightEdgeSwipeGesture", &notificationcenter},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -2534,13 +2547,28 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
     // lowbit config items
-	for (int i = 0; i < countof(lowbitvars); i++)
-		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+    for (int i = 0; i < countof(lowbitvars); i++)
+        if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
-			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            *lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
+        else if ((bl=OSDynamicCast(OSBoolean, config->getObject(lowbitvars[i].name))))
+        {
+            *lowbitvars[i].var = bl->isTrue();
+            setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
+        }
     
+    if ((num = OSDynamicCast(OSNumber, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = num->unsigned32BitValue() ? true : false;
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
+    }
+    else if ((bl = OSDynamicCast(OSBoolean, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = bl->isTrue();
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
+    }
     // special case for MaxDragTime (which is really max time for a double-click)
     // we can let it go no more than 230ms because otherwise taps on
     // the menu bar take too long if drag mode is enabled.  The code in that case

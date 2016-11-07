@@ -65,6 +65,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kActionSwipeDown                    "ActionSwipeDown"
 #define kActionSwipeLeft                    "ActionSwipeLeft"
 #define kActionSwipeRight                   "ActionSwipeRight"
+#define kActionNotificationCenter           "ActionNotificationCenter"
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
@@ -91,6 +92,7 @@ void* _org_rehabman_dontstrip_[] =
 
 // get some keyboard id information from IOHIDFamily/IOHIDKeyboard.h and Gestalt.h
 //#define APPLEPS2KEYBOARD_DEVICE_TYPE	205 // Generic ISO keyboard
+//#define APPLEPS2KEYBOARD_DEVICE_TYPE	44   // Apple M90 Wireless keyboard
 #define APPLEPS2KEYBOARD_DEVICE_TYPE	3   // Unknown ANSI keyboard
 
 OSDefineMetaClassAndStructors(ApplePS2Keyboard, IOHIKeyboard);
@@ -354,7 +356,7 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
     
 #ifdef DEBUG
     logKeySequence("Swipe Up:", _actionSwipeUp);
@@ -934,7 +936,14 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     }
     
     // now load swipe Action configuration data
-    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
+    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionNotificationCenter));
+    if (str)
+    {
+        parseAction(str->getCStringNoCopy(), _actionNotificationCenter, countof(_actionNotificationCenter));
+        setProperty(kActionNotificationCenter, str);
+    }
+    
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
@@ -1757,8 +1766,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                             dict->release();
                         }
                     }
-                    OSSafeRelease(num);
-                    OSSafeRelease(key);
+                    OSSafeReleaseNULL(num);
+                    OSSafeReleaseNULL(key);
                     service->release();
                 }
             }

@@ -7,7 +7,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rehabman.voodoo.driver.PS2Keyboard</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}</string>
+	<string>${MODULE_VERSION}d</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -249,14 +249,16 @@
 				</dict>
 				<key>Default</key>
 				<dict>
+					<key>ActionNotificationCenter</key>
+					<string>3b d, 37 d, 3a d, 38 d, 44 d, 44 u, 38 u, 3a u, 37 u, 3b u</string>
 					<key>ActionSwipeDown</key>
-					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
+					<string>3e d, 7d d, 7d u, 3e u</string>
 					<key>ActionSwipeLeft</key>
-					<string>37 d, 21 d, 21 u, 37 u</string>
+					<string>3e d, 7c d, 7c u, 3e u</string>
 					<key>ActionSwipeRight</key>
-					<string>37 d, 1e d, 1e u, 37 u</string>
+					<string>3e d, 7b d, 7b u, 3e u</string>
 					<key>ActionSwipeUp</key>
-					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
+					<string>3e d, 7e d, 7e u, 3e u</string>
 					<key>Breakless PS2</key>
 					<array>
 						<string>;Items must be strings in the form of breaklessscan (in hex)</string>
@@ -286,7 +288,7 @@
 					<key>Swap capslock and left control</key>
 					<false/>
 					<key>Swap command and option</key>
-					<true/>
+					<false/>
 					<key>Use ISO layout keyboard</key>
 					<false/>
 					<key>alt_handler_id</key>
@@ -552,7 +554,18 @@
 				</dict>
 				<key>LENOVO</key>
 				<dict>
-					<key>T420-not-used-for-Sierra</key>
+					<key>Options</key>
+					<dict>
+						<key>ActionSwipeLeft</key>
+						<string>37 d, 21 d, 21 u, 37 u</string>
+						<key>ActionSwipeRight</key>
+						<string>37 d, 1e d, 1e u, 37 u</string>
+						<key>Swap command and option</key>
+						<true/>
+					</dict>
+					<key>T420</key>
+					<string>Options</string>
+					<key>T420-Options-not-used-for-Sierra</key>
 					<dict>
 						<key>Custom ADB Map</key>
 						<array>
@@ -613,6 +626,8 @@
 						<key>SleepPressTime</key>
 						<integer>1500</integer>
 					</dict>
+					<key>T460</key>
+					<string>Options</string>
 				</dict>
 				<key>SECCSD</key>
 				<dict>

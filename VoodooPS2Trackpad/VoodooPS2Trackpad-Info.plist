@@ -7,7 +7,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2002-2003, mackerintel 2008, RehabMan 2012-2013</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}b</string>
+	<string>${MODULE_VERSION}d</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -150,22 +150,82 @@
 		</dict>
 		<key>Synaptics TouchPad</key>
 		<dict>
+			<key>ApplePreferenceCapability</key>
+			<true/>
+			<key>ApplePreferenceIdentifier</key>
+			<string>com.apple.AppleMultitouchTrackpad</string>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>HIDPointerAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAgAEAAAABAAAABAAAAAQAAAAACAAAA0AAIAAAACAAAABQAAAAYAAAAIAAAAC4AAAAwAAAATgAAAEAAAAB0AAAAUAAAAKAAAABgAAAA1AAAAIAAAAFgAAAArAAAAjAAAADQAAAC8AAAAOwAAAOMAAABBAAABBAAAAEcAAAEjAAAAAUAAADwAAgAAAAIAAAAEAAAABQAAAAYAAAAJAAAACAAAAA4AAAAKAAAAE4AAAAwAAAAZgAAAEAAAACgAAAAUAAAAOQAAABgAAABNAAAAIAAAAHsAAAArAAAAuwAAADQAAADyAAAAOwAAARwAAABBAAABPwAAAEcAAAFiAAAAAgAAADwAAgAAAAIAAAAEAAAABYAAAAYAAAAKgAAACAAAABEAAAAKAAAAGAAAAAwAAAAgAAAAEAAAADQAAAAUAAAASwAAABgAAABkAAAAIAAAAKAAAAArAAAA7wAAADQAAAEuAAAAOwAAAV0AAABBAAABgQAAAEcAAAGkAAAAAsAAADwAAgAAAAIAAAAEAAAABoAAAAYAAAAMAAAACAAAABQAAAAKAAAAHQAAAAwAAAAnAAAAEAAAAEEAAAAUAAAAXgAAABgAAAB/AAAAIAAAAMgAAAArAAABKAAAADQAAAFyAAAAOwAAAaQAAABBAAABywAAAEcAAAHrAAAAA4AAADwAAgAAAAKAAAAEAAAABwAAAAYAAAANgAAACAAAABeAAAAKAAAAIoAAAAwAAAAvAAAAEAAAAE8AAAAUAAAAdQAAABgAAACfAAAAIAAAAPcAAAArAAABZAAAADQAAAG3AAAAOwAAAe0AAABBAAACFQAAAEcAAAIxAAAABAAAADwAAgAAAAMAAAAEAAAACAAAAAYAAAAPgAAACAAAABsAAAAKAAAAKQAAAAwAAAA5gAAAEAAAAGMAAAAUAAAAkwAAABgAAADLAAAAIAAAATUAAAArAAABugAAADQAAAIMAAAAOwAAAj0AAABBAAACXAAAAEcAAAJxAAA==</data>
+			<data>
+			AACAAFVTQioABwAAAAAAAgAEAAAABAAAABAAAAAQAAAAACAAAA0A
+			AIAAAACAAAABQAAAAYAAAAIAAAAC4AAAAwAAAATgAAAEAAAAB0AA
+			AAUAAAAKAAAABgAAAA1AAAAIAAAAFgAAAArAAAAjAAAADQAAAC8A
+			AAAOwAAAOMAAABBAAABBAAAAEcAAAEjAAAAAUAAADwAAgAAAAIAA
+			AAEAAAABQAAAAYAAAAJAAAACAAAAA4AAAAKAAAAE4AAAAwAAAAZg
+			AAAEAAAACgAAAAUAAAAOQAAABgAAABNAAAAIAAAAHsAAAArAAAAu
+			wAAADQAAADyAAAAOwAAARwAAABBAAABPwAAAEcAAAFiAAAAAgAAA
+			DwAAgAAAAIAAAAEAAAABYAAAAYAAAAKgAAACAAAABEAAAAKAAAAG
+			AAAAAwAAAAgAAAAEAAAADQAAAAUAAAASwAAABgAAABkAAAAIAAAA
+			KAAAAArAAAA7wAAADQAAAEuAAAAOwAAAV0AAABBAAABgQAAAEcAA
+			AGkAAAAAsAAADwAAgAAAAIAAAAEAAAABoAAAAYAAAAMAAAACAAAA
+			BQAAAAKAAAAHQAAAAwAAAAnAAAAEAAAAEEAAAAUAAAAXgAAABgAA
+			AB/AAAAIAAAAMgAAAArAAABKAAAADQAAAFyAAAAOwAAAaQAAABBA
+			AABywAAAEcAAAHrAAAAA4AAADwAAgAAAAKAAAAEAAAABwAAAAYAA
+			AANgAAACAAAABeAAAAKAAAAIoAAAAwAAAAvAAAAEAAAAE8AAAAUA
+			AAAdQAAABgAAACfAAAAIAAAAPcAAAArAAABZAAAADQAAAG3AAAAO
+			wAAAe0AAABBAAACFQAAAEcAAAIxAAAABAAAADwAAgAAAAMAAAAEA
+			AAACAAAAAYAAAAPgAAACAAAABsAAAAKAAAAKQAAAAwAAAA5gAAAE
+			AAAAGMAAAAUAAAAkwAAABgAAADLAAAAIAAAATUAAAArAAABugAAA
+			DQAAAIMAAAAOwAAAj0AAABBAAACXAAAAEcAAAJxAAA==
+			</data>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>
 			<key>HIDScrollAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMAAwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABjRl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIAAAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABrPTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucAtn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CXANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAADCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWAAGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLNUQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAkS20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEAAAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAHN4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikADvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrGACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AAAQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAAAAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5NTAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCTvnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABWfwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAhgAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAAqYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAAAV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACegAAF8JGg=</data>
+			<data>
+			AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMA
+			AwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7
+			AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK
+			7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABj
+			Rl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIA
+			AAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABr
+			PTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucA
+			tn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CX
+			ANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAA
+			DCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWA
+			AGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLN
+			UQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAk
+			S20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEA
+			AAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAH
+			N4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikA
+			DvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrG
+			ACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AA
+			AQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAA
+			AAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5N
+			TAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCT
+			vnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABW
+			fwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAh
+			gAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAA
+			qYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAA
+			AV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACeg
+			AAF8JGg=
+			</data>
 			<key>HIDScrollAccelerationType</key>
 			<string>HIDTrackpadScrollAcceleration</string>
+			<key>HIDScrollResolutionX</key>
+			<integer>26214400</integer>
+			<key>HIDScrollResolutionY</key>
+			<integer>26214400</integer>
 			<key>IOClass</key>
 			<string>ApplePS2SynapticsTouchPad</string>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
+			<key>MT Built-in</key>
+			<true/>
+			<key>MTHIDDevice</key>
+			<true/>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
@@ -377,24 +437,47 @@
 				</dict>
 				<key>LENOVO</key>
 				<dict>
+					<key>BogusDeltaThreshX</key>
+					<integer>400</integer>
+					<key>BogusDeltaThreshY</key>
+					<integer>350</integer>
+					<key>ClickPad</key>
+					<dict>
+						<key>EdgeBottom</key>
+						<integer>1100</integer>
+						<key>FingerZ</key>
+						<integer>20</integer>
+						<key>MouseMultiplierX</key>
+						<integer>2</integer>
+						<key>MouseMultiplierY</key>
+						<integer>2</integer>
+					</dict>
+					<key>Clicking</key>
+					<true/>
+					<key>DragLock</key>
+					<false/>
+					<key>DragLockTempMask</key>
+					<integer>262148</integer>
+					<key>Dragging</key>
+					<false/>
+					<key>DynamicEWMode</key>
+					<false/>
+					<key>FakeMiddleButton</key>
+					<false/>
+					<key>ScrollResolution</key>
+					<integer>800</integer>
+					<key>SmoothInput</key>
+					<true/>
 					<key>T420</key>
 					<string>TrackPad</string>
 					<key>T460</key>
 					<string>ClickPad</string>
 					<key>TrackPad</key>
 					<dict>
-						<key>BogusDeltaThreshX</key>
-						<integer>400</integer>
-						<key>BogusDeltaThreshY</key>
-						<integer>350</integer>
 						<key>DivisorX</key>
 						<integer>1</integer>
 						<key>DivisorY</key>
 						<integer>1</integer>
-						<key>DragLockTempMask</key>
-						<integer>262148</integer>
-						<key>FakeMiddleButton</key>
-						<false/>
 						<key>FingerZ</key>
 						<integer>47</integer>
 						<key>MomentumScrollThreshY</key>
@@ -410,41 +493,26 @@
 						<key>Resolution</key>
 						<integer>3200</integer>
 						<key>ScrollDeltaThreshX</key>
-						<integer>20</integer>
+						<integer>10</integer>
 						<key>ScrollDeltaThreshY</key>
-						<integer>20</integer>
-						<key>ScrollResolution</key>
-						<integer>3200</integer>
-						<key>SmoothInput</key>
-						<false/>
-						<key>UnsmoothInput</key>
-						<false/>
+						<integer>10</integer>
 					</dict>
-					<key>ClickPad</key>
-					<dict>
-						<key>BogusDeltaThreshX</key>
-						<integer>400</integer>
-						<key>BogusDeltaThreshY</key>
-						<integer>350</integer>
-						<key>DragLockTempMask</key>
-						<integer>262148</integer>
-						<key>DynamicEWMode</key>
-						<false/>
-						<key>FakeMiddleButton</key>
-						<false/>
-						<key>FingerZ</key>
-						<integer>25</integer>
-						<key>MouseMultiplierX</key>
-						<integer>2</integer>
-						<key>MouseMultiplierY</key>
-						<integer>2</integer>
-						<key>EdgeBottom</key>
-						<integer>1100</integer>
-					</dict>
+					<key>UnsmoothInput</key>
+					<true/>
 				</dict>
 			</dict>
 			<key>ProductID</key>
 			<integer>547</integer>
+			<key>SupportsGestureScrolling</key>
+			<true/>
+			<key>TrackpadEmbedded</key>
+			<true/>
+			<key>TrackpadFourFingerGestures</key>
+			<false/>
+			<key>TrackpadSecondaryClickCorners</key>
+			<true/>
+			<key>TrackpadThreeFingerDrag</key>
+			<false/>
 			<key>VendorID</key>
 			<integer>1452</integer>
 		</dict>

@@ -1,0 +1,88 @@
+991c991
+< 
+---
+> int cpb = 0;
+1194c1194,1229
+<         int clickbuttons = packet[3] & 0x3;
+---
+>         int clickbuttons;
+>         
+>         // parse packets for buttons - TrackPoint Buttons may not be passthru
+>         int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+>         int lb = packet[4] & 0x3; // 1 for left real button
+>         int rb = packet[5] & 0x3; // 1 for right real button
+>         
+>         if (bp == 2)
+>         {
+>             if      ( lb == 1 )
+>             { // left click
+>                 clickbuttons = 0x1;
+>             }
+>             else if ( rb == 1 )
+>             { // right click
+>                 clickbuttons = 0x2;
+>             }
+>             else if ( lb == 2 )
+>             { // middle click
+>                 clickbuttons = 0x4;
+>                 //_mbuttonstate = STATE_MIDDLE;
+>             }
+>             else
+>             {
+>                 clickbuttons = 0x0;
+>                 //_mbuttonstate = STATE_NOBUTTONS;
+>             }
+>             cpb = clickbuttons;
+>             buttons=clickbuttons;
+>             setClickButtons(clickbuttons);
+>         }
+>         else
+>         {
+>             clickbuttons = bp;
+>         }
+>         
+1221a1257,1258
+>         if ( cpb )
+>             _clickbuttons=cpb;
+1378c1415,1417
+<         DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
+---
+> #ifdef DEBUG_VERBOSE
+>         IOLog("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
+> #endif
+1913a1953,1987
+>             
+>             // parse packets for buttons - TrackPoint Buttons may not be passthru
+>             int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+>             int lb = packet[4] & 0x3; // 1 for left real button
+>             int rb = packet[5] & 0x3; // 1 for right real button
+>             
+>             if (bp == 2)
+>             {
+>                 if      ( lb == 1 )
+>                 { // left click
+>                     clickbuttons = 0x1;
+>                 }
+>                 else if ( rb == 1 )
+>                 { // right click
+>                     clickbuttons = 0x2;
+>                 }
+>                 else if ( lb == 2 )
+>                 { // middle click
+>                     clickbuttons = 0x4;
+>                     //_mbuttonstate = STATE_MIDDLE;
+>                 }
+>                 else
+>                 {
+>                     clickbuttons = 0x0;
+>                     //_mbuttonstate = STATE_NOBUTTONS;
+>                 }
+>                 cpb = clickbuttons;
+>                 buttons=clickbuttons;
+>                 setClickButtons(clickbuttons);
+>             }
+>             else
+>             {
+>                 clickbuttons = bp;
+>             }
+> 

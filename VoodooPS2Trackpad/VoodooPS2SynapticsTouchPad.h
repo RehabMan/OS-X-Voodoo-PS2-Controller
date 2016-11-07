@@ -198,8 +198,13 @@ private:
 	bool clicking;
 	bool dragging;
 	bool draglock;
+    bool threefingerdrag;
     int draglocktemp;
-	bool hscroll, scroll;
+    int threefingerhorizswipe;
+    int threefingervertswipe;
+    int notificationcenter;
+    int rightclick_corner;
+    bool hscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
@@ -359,7 +364,9 @@ private:
 
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
-        
+    inline bool isInLeftClickZone(int x, int y)
+    { return x < rczl && x < rczr && y > rczb && y < rczt; }
+    
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
