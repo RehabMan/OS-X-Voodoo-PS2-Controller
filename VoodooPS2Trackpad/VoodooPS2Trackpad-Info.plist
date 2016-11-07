@@ -170,6 +170,10 @@
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
 			<string>AppleUSBMultitouchDriver</string>
+            <key>HIDScrollResolutionX</key>
+            <integer>26214400</integer>
+            <key>HIDScrollResolutionY</key>
+            <integer>26214400</integer>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
