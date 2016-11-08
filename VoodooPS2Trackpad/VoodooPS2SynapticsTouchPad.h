@@ -364,7 +364,9 @@ private:
 
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
-        
+    inline bool isInLeftClickZone(int x, int y)
+    { return x < rczl && x < rczr && y > rczb && y < rczt; }
+    
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);

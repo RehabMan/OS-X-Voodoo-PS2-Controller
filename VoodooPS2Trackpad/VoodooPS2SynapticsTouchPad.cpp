@@ -116,8 +116,13 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wlimit=9;
 	wvdivisor=30;
 	whdivisor=30;
-	clicking=true;
-	dragging=true;
+	clicking=false;
+	dragging=false;
+    threefingerdrag=false;
+    threefingervertswipe=false;
+    threefingerhorizswipe=false;
+    notificationcenter=false;
+    rightclick_corner=0;
 	draglock=false;
     draglocktemp=0;
 	hscroll=false;
@@ -1206,8 +1211,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
             DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
-            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
-                || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
+            if (isFingerTouch(z) && (
+                                     ((rightclick_corner == 2 && isInRightClickZone(xx, yy)) ||
+                                      (rightclick_corner == 1 && isInLeftClickZone(xx, yy)))
+                                     || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
             {
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
@@ -2381,6 +2388,10 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"UnitsPerMMY",                     &yupmm},
         {"ScrollDeltaThreshX",              &scrolldxthresh},
         {"ScrollDeltaThreshY",              &scrolldythresh},
+        {"TrackpadCornerSecondaryClick",    &rightclick_corner},
+        {"TrackpadThreeFingerVertSwipeGesture", &threefingervertswipe},
+        {"TrackpadThreeFingerHorizSwipeGesture", &threefingerhorizswipe},
+        {"TrackpadTwoFingerFromRightEdgeSwipeGesture", &notificationcenter},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
