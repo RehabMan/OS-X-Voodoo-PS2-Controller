@@ -219,6 +219,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _sleepEjectTimer = 0;
     _cmdGate = 0;
     
+    _capsLock = false;
+    
     _fkeymode = 0;
     _fkeymodesupported = false;
     _keysStandard = 0;
@@ -262,6 +264,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
+    parseAction("", _actionNotificationCenter, countof(_actionNotificationCenter));
 
     return true;
 }
@@ -1859,6 +1862,22 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
     
+    if (adbKeyCode == 0x39) // Caps Lock
+    {
+        clock_get_uptime(&now_abs);
+        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+        clock_get_uptime(&now_abs);
+        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+        if (!goingDown)
+        {
+            _capsLock = !_capsLock;
+            setAlphaLock(_capsLock);
+            setAlphaLockFeedback(_capsLock);
+        }
+        
+        return true;
+    }
+    
     if (keyCode && !info.eatKey)
     {
         // dispatch to HID system
@@ -2000,6 +2019,13 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2Keyboard::doesKeyLock(unsigned key) {
+    return (key == NX_KEYTYPE_CAPS_LOCK) || super::doesKeyLock(key);
+}
+
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

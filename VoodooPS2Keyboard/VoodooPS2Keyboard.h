@@ -83,6 +83,8 @@ private:
     UInt8                       _ledState;
     IOCommandGate*              _cmdGate;
 
+    bool                        _capsLock;
+    
     // for keyboard remapping
     UInt16                      _PS2modifierState;
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
@@ -185,6 +187,7 @@ public:
     virtual IOReturn setProperties (OSObject *props);
     
     virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
+    virtual bool doesKeyLock(unsigned key) override;  //does key lock physically
 };
 
 #endif /* _APPLEPS2KEYBOARD_H */
