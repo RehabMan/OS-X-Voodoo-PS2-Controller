@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Trackpad</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -152,10 +152,28 @@
 		</dict>
 		<key>Synaptics TouchPad</key>
 		<dict>
+			<key>SupportsGestureScrolling</key>
+			<true/>
+			<key>TrackpadFourFingerGestures</key>
+			<false/>
+			<key>MTHIDDevice</key>
+			<true/>
+			<key>MT Built-in</key>
+			<true/>
+			<key>TrackpadEmbedded</key>
+			<true/>
+			<key>TrackpadThreeFingerDrag</key>
+			<true/>
+			<key>TrackpadSecondaryClickCorners</key>
+			<true/>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
-			<string>ApplePS2SynapticsTouchPad</string>
+			<string>AppleUSBMultitouchDriver</string>
+            <key>HIDScrollResolutionX</key>
+            <integer>26214400</integer>
+            <key>HIDScrollResolutionY</key>
+            <integer>26214400</integer>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
@@ -237,7 +255,7 @@
 					<key>SmoothInput</key>
 					<true/>
 					<key>UnsmoothInput</key>
-					<true/>
+					<false/>
 					<key>SkipPassThrough</key>
 					<false/>
 					<key>TapThresholdX</key>

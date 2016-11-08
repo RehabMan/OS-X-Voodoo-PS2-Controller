@@ -65,6 +65,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kActionSwipeDown                    "ActionSwipeDown"
 #define kActionSwipeLeft                    "ActionSwipeLeft"
 #define kActionSwipeRight                   "ActionSwipeRight"
+#define kActionNotificationCenter           "ActionNotificationCenter"
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
@@ -91,7 +92,7 @@ void* _org_rehabman_dontstrip_[] =
 
 // get some keyboard id information from IOHIDFamily/IOHIDKeyboard.h and Gestalt.h
 //#define APPLEPS2KEYBOARD_DEVICE_TYPE	205 // Generic ISO keyboard
-#define APPLEPS2KEYBOARD_DEVICE_TYPE	3   // Unknown ANSI keyboard
+#define APPLEPS2KEYBOARD_DEVICE_TYPE	44   // Apple M90 Wireless keyboard
 
 OSDefineMetaClassAndStructors(ApplePS2Keyboard, IOHIKeyboard);
 
@@ -218,6 +219,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _sleepEjectTimer = 0;
     _cmdGate = 0;
     
+    _capsLock = false;
+    
     _fkeymode = 0;
     _fkeymodesupported = false;
     _keysStandard = 0;
@@ -261,6 +264,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
+    parseAction("", _actionNotificationCenter, countof(_actionNotificationCenter));
 
     return true;
 }
@@ -354,7 +358,7 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
     
 #ifdef DEBUG
     logKeySequence("Swipe Up:", _actionSwipeUp);
@@ -934,7 +938,14 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     }
     
     // now load swipe Action configuration data
-    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
+    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionNotificationCenter));
+    if (str)
+    {
+        parseAction(str->getCStringNoCopy(), _actionNotificationCenter, countof(_actionNotificationCenter));
+        setProperty(kActionNotificationCenter, str);
+    }
+    
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
@@ -1757,8 +1768,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                             dict->release();
                         }
                     }
-                    OSSafeRelease(num);
-                    OSSafeRelease(key);
+                    OSSafeReleaseNULL(num);
+                    OSSafeReleaseNULL(key);
                     service->release();
                 }
             }
@@ -1850,6 +1861,22 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     info.goingDown = goingDown;
     info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
+    
+    if (adbKeyCode == 0x39) // Caps Lock
+    {
+        clock_get_uptime(&now_abs);
+        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+        clock_get_uptime(&now_abs);
+        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+        if (!goingDown)
+        {
+            _capsLock = !_capsLock;
+            setAlphaLock(_capsLock);
+            setAlphaLockFeedback(_capsLock);
+        }
+        
+        return true;
+    }
     
     if (keyCode && !info.eatKey)
     {
@@ -1992,6 +2019,13 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2Keyboard::doesKeyLock(unsigned key) {
+    return (key == NX_KEYTYPE_CAPS_LOCK) || super::doesKeyLock(key);
+}
+
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

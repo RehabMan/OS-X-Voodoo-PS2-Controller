@@ -155,15 +155,15 @@ public:
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ApplePS2SynapticsTouchPad Class Declaration
+// AppleUSBMultitouchDriver Class Declaration
 //
 
 #define kPacketLength 6
 
-class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
+class EXPORT AppleUSBMultitouchDriver : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
+	OSDeclareDefaultStructors(AppleUSBMultitouchDriver);
     
 private:
     ApplePS2MouseDevice * _device;
@@ -180,6 +180,7 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
+    bool ignore_ew_packets;
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
@@ -198,8 +199,13 @@ private:
 	bool clicking;
 	bool dragging;
 	bool draglock;
+    bool threefingerdrag;
     int draglocktemp;
-	bool hscroll, scroll;
+    int threefingerhorizswipe;
+    int threefingervertswipe;
+    int notificationcenter;
+    int rightclick_corner;
+    bool hscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
@@ -345,7 +351,7 @@ private:
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
-
+    const char* modeName(int touchmode);
     void setClickButtons(UInt32 clickButtons);
     
     inline bool isTouchMode() { return touchmode & 1; }
@@ -359,7 +365,9 @@ private:
 
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
-        
+    inline bool isInLeftClickZone(int x, int y)
+    { return x < rczl && x < rczr && y > rczb && y < rczt; }
+    
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
@@ -409,7 +417,7 @@ protected:
     
 public:
     virtual bool init( OSDictionary * properties );
-    virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
+    virtual AppleUSBMultitouchDriver * probe( IOService * provider,
                                                SInt32 *    score );
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
