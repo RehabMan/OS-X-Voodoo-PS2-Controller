@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}d</string>
+	<string>${MODULE_VERSION}e</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -150,10 +150,6 @@
 		</dict>
 		<key>Synaptics TouchPad</key>
 		<dict>
-			<key>ApplePreferenceCapability</key>
-			<true/>
-			<key>ApplePreferenceIdentifier</key>
-			<string>com.apple.AppleMultitouchTrackpad</string>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>HIDPointerAccelerationTable</key>
@@ -217,7 +213,7 @@
 			<key>HIDScrollResolutionY</key>
 			<integer>26214400</integer>
 			<key>IOClass</key>
-			<string>ApplePS2SynapticsTouchPad</string>
+			<string>AppleUSBMultitouchDriver</string>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
@@ -373,7 +369,7 @@
 					<key>UnitsPerMMY</key>
 					<integer>50</integer>
 					<key>UnsmoothInput</key>
-					<true/>
+					<false/>
 					<key>UseHighRate</key>
 					<true/>
 					<key>VerticalScrollDivisor</key>
@@ -446,7 +442,7 @@
 						<key>EdgeBottom</key>
 						<integer>1100</integer>
 						<key>FingerZ</key>
-						<integer>20</integer>
+						<integer>30</integer>
 						<key>MouseMultiplierX</key>
 						<integer>2</integer>
 						<key>MouseMultiplierY</key>
@@ -512,7 +508,7 @@
 			<key>TrackpadSecondaryClickCorners</key>
 			<true/>
 			<key>TrackpadThreeFingerDrag</key>
-			<false/>
+			<true/>
 			<key>VendorID</key>
 			<integer>1452</integer>
 		</dict>

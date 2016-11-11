@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}d</string>
+	<string>${MODULE_VERSION}e</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -26,55 +26,72 @@
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Mouse</string>
-			<key>HIDPointerAccelerationType</key>
-			<string>HIDTrackpadAcceleration</string>
-			<key>HIDScrollAccelerationType</key>
-			<string>HIDTrackpadScrollAcceleration</string>
 			<key>IOClass</key>
 			<string>ApplePS2Mouse</string>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
+			<key>ProductID</key>
+			<integer>547</integer>
+			<key>VendorID</key>
+			<integer>1452</integer>
+			<key>HIDPointerAccelerationType</key>
+			<string>HIDTrackpadAcceleration</string>
+			<key>HIDScrollAccelerationType</key>
+			<string>HIDTrackpadScrollAcceleration</string>
+			<key>USBMouseStopsTrackpad</key>
+			<integer>0</integer>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>ActLikeTrackpad</key>
-					<false/>
-					<key>ButtonCount</key>
-					<integer>3</integer>
-					<key>DefaultResolution</key>
-					<integer>240</integer>
 					<key>DisableDevice</key>
 					<false/>
-					<key>DisableLEDUpdating</key>
-					<false/>
-					<key>FakeMiddleButton</key>
-					<false/>
-					<key>ForceDefaultResolution</key>
-					<true/>
 					<key>ForceSetResolution</key>
 					<false/>
-					<key>MiddleClickTime</key>
-					<integer>100000000</integer>
-					<key>MouseCount</key>
-					<integer>0</integer>
+					<key>ScrollResolution</key>
+					<integer>5</integer>
+					<key>ResolutionMode</key>
+					<integer>3</integer>
+					<key>ForceDefaultResolution</key>
+					<true/>
+					<key>DefaultResolution</key>
+					<integer>240</integer>
 					<key>MouseYInverter</key>
+					<integer>1</integer>
+					<key>ScrollYInverter</key>
 					<integer>1</integer>
 					<key>QuietTimeAfterTyping</key>
 					<integer>500000000</integer>
-					<key>ResolutionMode</key>
-					<integer>3</integer>
-					<key>ScrollResolution</key>
-					<integer>5</integer>
-					<key>ScrollYInverter</key>
-					<integer>1</integer>
+					<key>ActLikeTrackpad</key>
+					<false/>
 					<key>TrackpadScroll</key>
 					<true/>
+					<key>DisableLEDUpdating</key>
+					<false/>
 					<key>WakeDelay</key>
 					<integer>1000</integer>
+					<key>MouseCount</key>
+					<integer>0</integer>
+					<key>ButtonCount</key>
+					<integer>3</integer>
+					<key>FakeMiddleButton</key>
+					<false/>
+					<key>MiddleClickTime</key>
+					<integer>100000000</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
+					<key>ProBook-87</key>
+					<string>ProBook</string>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
+					<key>ProBook</key>
+					<dict>
+						<key>DisableDevice</key>
+						<true/>
+						<key>ActLikeTrackpad</key>
+						<true/>
+					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
 					<key>1619</key>
@@ -101,31 +118,14 @@
 					<string>ProBook</string>
 					<key>17F6</key>
 					<string>ProBook</string>
+					<key>198F</key>
+					<string>ProBook</string>
 					<key>1942</key>
 					<string>ProBook</string>
 					<key>1949</key>
 					<string>ProBook</string>
-					<key>198F</key>
-					<string>ProBook</string>
-					<key>ProBook</key>
-					<dict>
-						<key>ActLikeTrackpad</key>
-						<true/>
-						<key>DisableDevice</key>
-						<true/>
-					</dict>
-					<key>ProBook-102</key>
-					<string>ProBook</string>
-					<key>ProBook-87</key>
-					<string>ProBook</string>
 				</dict>
 			</dict>
-			<key>ProductID</key>
-			<integer>547</integer>
-			<key>USBMouseStopsTrackpad</key>
-			<integer>0</integer>
-			<key>VendorID</key>
-			<integer>1452</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
