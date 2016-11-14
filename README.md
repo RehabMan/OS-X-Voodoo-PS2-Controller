@@ -6,7 +6,9 @@ The T460 mods are code changes to support the new ClickPad buttons as well as th
 
 ### Current Build Environment
 
-My build environment is currently Xcode 8, using SDK 10.11, targeting OS X 10.11.
+My build environment is currently Xcode 8, using SDK 10.12, targeting OS X 10.12
+
+Merged and ntegrated with usr-sse2/Michael Belyaev's fixes for Sierra PrefPane etc.
 
 
 ### --------------------- From RehabMan -----------------------------------------

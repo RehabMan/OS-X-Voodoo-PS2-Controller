@@ -77,7 +77,9 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
     uint64_t now_ns;
     UInt32 buttons;
     int x, y, xraw, yraw, z, w, f;
+#ifdef DEBUG_VERBOSE
     int tm1;
+#endif
     // Note: This is the three byte relative format packet. Which pretty
     //  much is not used.  I kept it here just for reference.
     // This is a "mouse compatible" packet.
@@ -189,7 +191,15 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         }
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+        // filter out middle mouse click if middle button scroll is true
+        if (mousemiddlescroll)
+        {
+            if(buttons != 4) dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+        }
+        else
+        {
+            dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+        }
 #ifdef DEBUG_VERBOSE
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
@@ -520,7 +530,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         }
         time_history.reset();
         dy_history.reset();
-                DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
+        DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (now_ns-touchtime), now_ns-touchtime < maxtaptime?"true":"false");
         if (now_ns-touchtime < maxtaptime && clicking)
         {
             switch (touchmode)
@@ -538,6 +548,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
                     else if (wasdouble && rtap)
                         buttons |= !swapdoubletriple ? 0x2 : 0x04;
                     else*/
+                    DEBUG_LOG("ps2: MODE_DRAG buttons=%d\n", buttons);
                         buttons |= 0x1;
                     ignore_ew_packets=false;
                     touchmode=MODE_NOTOUCH;
@@ -560,6 +571,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
                     }
                     else
                     {
+                        DEBUG_LOG("ps2: MODE_Default buttons=%d\n", buttons);
                         buttons |= 0x1;
                         touchmode=dragging ? MODE_PREDRAG : MODE_NOTOUCH;
                     }
@@ -908,7 +920,15 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         touchmode=MODE_MOVE;
     
     // dispatch dx/dy and current button status
-    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+    // filter out middle mouse click if middle button scroll is true
+    if (mousemiddlescroll)
+    {
+        if(buttons != 4) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+    }
+    else
+    {
+        dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+    }
     
     // always save last seen position for calculating deltas later
     lastx=x;
