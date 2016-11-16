@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}f</string>
+	<string>${MODULE_VERSION}g</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -401,6 +401,10 @@
 						<integer>2</integer>
 						<key>MouseMultiplierY</key>
 						<integer>2</integer>
+						<key>MouseScrollMultiplierX</key>
+						<integer>2</integer>
+						<key>MouseScrollMultiplierY</key>
+						<integer>2</integer>
 					</dict>
 					<key>Clicking</key>
 					<true/>
@@ -439,9 +443,9 @@
 						<key>MouseMultiplierY</key>
 						<integer>8</integer>
 						<key>MouseScrollMultiplierX</key>
-						<integer>4</integer>
+						<integer>2</integer>
 						<key>MouseScrollMultiplierY</key>
-						<integer>4</integer>
+						<integer>2</integer>
 						<key>MultiFingerHorizontalDivisor</key>
 						<integer>4</integer>
 						<key>MultiFingerVerticalDivisor</key>

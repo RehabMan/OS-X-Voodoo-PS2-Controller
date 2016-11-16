@@ -64,7 +64,7 @@ void AppleUSBMultitouchDriver::onDragTimer(void)
     uint64_t now_abs;
     clock_get_uptime(&now_abs);
     UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
-    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    if (!(mousemiddlescroll && buttons == 4)) dispatchRelativePointerEventX(0, 0, buttons, now_abs);
     ignore_ew_packets=false;
 }
 
@@ -168,6 +168,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
     
     // now deal with pass through packet moving/scrolling
+    //if ((mousemiddlescroll || passthru) && 3 == w)
     if (passthru && 3 == w)
     {
         // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
@@ -178,7 +179,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
-        if (mousemiddlescroll && (packet[1] & 0x4)) // only for physical middle button
+        if (mousemiddlescroll && ((packet[1] & 0x4)||cpb == 4)) // only for physical middle button
         {
             // middle button treats deltas for scrolling
             SInt32 scrollx = 0, scrolly = 0;
@@ -192,17 +193,13 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         // filter out middle mouse click if middle button scroll is true
-        if (mousemiddlescroll)
-        {
-            if(buttons != 4) dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
-        }
-        else
+        if (!(mousemiddlescroll && combinedButtons == 4))
         {
             dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
         }
 #ifdef DEBUG_VERBOSE
         static int count = 0;
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d,(%d)\n", dx, dy, combinedButtons, count++);
 #endif
         return;
     }
@@ -540,8 +537,11 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
                     if (!immediateclick)
                     {
                         buttons&=~0x7;
-                        dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
-                        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                        if (!(mousemiddlescroll && buttons == 4))
+                        {
+                            dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
+                            dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                        }                        
                     }
                     /*if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
@@ -921,15 +921,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 pa
     
     // dispatch dx/dy and current button status
     // filter out middle mouse click if middle button scroll is true
-    if (mousemiddlescroll)
-    {
-        if(buttons != 4) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
-    }
-    else
-    {
-        dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
-    }
-    
+    if (!(mousemiddlescroll && buttons == 4)) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     // always save last seen position for calculating deltas later
     lastx=x;
     lasty=y;
@@ -1057,7 +1049,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacketEW(UInt8* packet, UInt32 
             yrest2 = dy % divisory;
             if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                 dx = dy = xrest = yrest = 0;
-            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
+            if (!(mousemiddlescroll && (buttons|_clickbuttons) == 4)) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
         }
     }
     else
@@ -1129,7 +1121,7 @@ void AppleUSBMultitouchDriver::dispatchEventsWithPacketEW(UInt8* packet, UInt32 
                 _clickbuttons=cpb;
             buttons |= _clickbuttons;
         }
-        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+        if (!(mousemiddlescroll && buttons == 4)) dispatchRelativePointerEventX(0, 0, buttons, now_abs);
     }
     
 #ifdef DEBUG_VERBOSE
