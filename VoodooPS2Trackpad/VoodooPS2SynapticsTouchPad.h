@@ -155,15 +155,15 @@ public:
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// AppleUSBMultitouchDriver Class Declaration
+// ApplePS2SynapticsTouchPad Class Declaration
 //
 
 #define kPacketLength 6
 
-class EXPORT AppleUSBMultitouchDriver : public IOHIPointing
+class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(AppleUSBMultitouchDriver);
+	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
     
 private:
     ApplePS2MouseDevice * _device;
@@ -180,7 +180,6 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
-    bool ignore_ew_packets;
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
@@ -199,13 +198,8 @@ private:
 	bool clicking;
 	bool dragging;
 	bool draglock;
-    bool threefingerdrag;
     int draglocktemp;
-    int threefingerhorizswipe;
-    int threefingervertswipe;
-    int notificationcenter;
-    int rightclick_corner;
-    bool hscroll, scroll;
+	bool hscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
@@ -234,6 +228,14 @@ private:
     int bogusdxthresh, bogusdythresh;
     int scrolldxthresh, scrolldythresh;
     int immediateclick;
+
+    // more properties added by usr-sse2
+    int rightclick_corner;
+    bool ignore_ew_packets;
+    bool threefingerdrag;
+    int threefingerhorizswipe;
+    int threefingervertswipe;
+    int notificationcenter;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
@@ -366,8 +368,8 @@ private:
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
     inline bool isInLeftClickZone(int x, int y)
-    { return x < rczl && x < rczr && y > rczb && y < rczt; }
-    
+        { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
+        
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
@@ -402,6 +404,7 @@ private:
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     void setParamPropertiesGated(OSDictionary* dict);
+    void injectVersionDependentProperites(OSDictionary* dict);
 
 protected:
 	virtual IOItemCount buttonCount();
@@ -417,7 +420,7 @@ protected:
     
 public:
     virtual bool init( OSDictionary * properties );
-    virtual AppleUSBMultitouchDriver * probe( IOService * provider,
+    virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
                                                SInt32 *    score );
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );

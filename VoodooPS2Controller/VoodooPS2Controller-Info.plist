@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}g</string>
+	<string>${MODULE_VERSION}a</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -105,13 +105,6 @@
 					<string>ProBook</string>
 					<key>ProBook-87</key>
 					<string>ProBook</string>
-				</dict>
-				<key>LENOVO</key>
-				<dict>
-					<key>MouseWakeFirst</key>
-					<true/>
-					<key>WakeDelay</key>
-					<integer>0</integer>
 				</dict>
 			</dict>
 		</dict>

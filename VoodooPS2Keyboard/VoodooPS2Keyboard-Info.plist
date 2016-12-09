@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}g</string>
+	<string>${MODULE_VERSION}a</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -116,8 +116,8 @@
 						<key>Custom ADB Map</key>
 						<array>
 							<string>e009=83;Dell Support to Launchpad</string>
-							<string>e0f1=90;Call brightens up w RKA1 for special mode</string>
-							<string>e0f2=91;Call brightens down w RKA2 for special mode</string>
+							<string>e0f1=71;Call brightens up w RKA1 for special mode (was =90)</string>
+							<string>e0f2=6b;Call brightens down w RKA2 for special mode (was =91)</string>
 							<string>e06e=70;Map vidmirror key for special mode default is adb90</string>
 						</array>
 						<key>Custom PS2 Map</key>
@@ -188,9 +188,15 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>//8CbgAAAAACWwEZ</data>
-							<data>//8C7gAAAAAC2wGZ</data>
-							<data>//8C7gAAAAABmQLb</data>
+							<data>
+							//8CbgAAAAACWwEZ
+							</data>
+							<data>
+							//8C7gAAAAAC2wGZ
+							</data>
+							<data>
+							//8C7gAAAAABmQLb
+							</data>
 						</array>
 						<key>MaximumMacroTime</key>
 						<integer>35000000</integer>
@@ -249,16 +255,14 @@
 				</dict>
 				<key>Default</key>
 				<dict>
-					<key>ActionNotificationCenter</key>
-					<string>3b d, 37 d, 3a d, 38 d, 44 d, 44 u, 38 u, 3a u, 37 u, 3b u</string>
 					<key>ActionSwipeDown</key>
-					<string>3e d, 7d d, 7d u, 3e u</string>
+					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
 					<key>ActionSwipeLeft</key>
-					<string>3e d, 7c d, 7c u, 3e u</string>
+					<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
 					<key>ActionSwipeRight</key>
-					<string>3e d, 7b d, 7b u, 3e u</string>
+					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
 					<key>ActionSwipeUp</key>
-					<string>3e d, 7e d, 7e u, 3e u</string>
+					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
 					<key>Breakless PS2</key>
 					<array>
 						<string>;Items must be strings in the form of breaklessscan (in hex)</string>
@@ -288,7 +292,7 @@
 					<key>Swap capslock and left control</key>
 					<false/>
 					<key>Swap command and option</key>
-					<false/>
+					<true/>
 					<key>Use ISO layout keyboard</key>
 					<false/>
 					<key>alt_handler_id</key>
@@ -489,8 +493,8 @@
 						<array>
 							<string>e002=70</string>
 							<string>e006=80</string>
-							<string>e008=90</string>
-							<string>e009=91</string>
+							<string>e008=71 (was =90)</string>
+							<string>e009=6b (was =91)</string>
 						</array>
 						<key>Function Keys Special</key>
 						<array>

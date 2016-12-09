@@ -55,6 +55,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
+#define kCapsLockFix                        "CapsLockFix"
 #define kSwapCommandOption                  "Swap command and option"
 #define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
 #define kMakeApplicationKeyAppleFN          "Make Application key into Apple Fn key"
@@ -1862,8 +1863,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     info.goingDown = goingDown;
     info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
-    
-    if (adbKeyCode == 0x39) // Caps Lock
+
+    if ( adbKeyCode == 0x39 && version_major >= 16) // Caps Lock Fix
     {
         clock_get_uptime(&now_abs);
         dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
@@ -1875,10 +1876,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             setAlphaLock(_capsLock);
             setAlphaLockFeedback(_capsLock);
         }
-        
+#ifdef DEBUG_VERBOSE
+DEBUG_LOG("%s: CapsFix %s\n", getName(), _capsLock?"On":"Off");
+#endif
         return true;
     }
-    
+
     if (keyCode && !info.eatKey)
     {
         // dispatch to HID system
@@ -2023,10 +2026,13 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Keyboard::doesKeyLock(unsigned key) {
-    return (key == NX_KEYTYPE_CAPS_LOCK) || super::doesKeyLock(key);
+bool ApplePS2Keyboard::doesKeyLock(unsigned key)
+{
+    if ( version_major >= 16 )
+        return (key == NX_KEYTYPE_CAPS_LOCK) || super::doesKeyLock(key);
+    else
+        return (false);
 }
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

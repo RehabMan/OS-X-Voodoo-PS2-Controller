@@ -82,9 +82,7 @@ private:
     bool                        _messageHandlerInstalled;
     UInt8                       _ledState;
     IOCommandGate*              _cmdGate;
-
-    bool                        _capsLock;
-    
+    bool                        _capsLock; // fix for CapsLock in Sierra
     // for keyboard remapping
     UInt16                      _PS2modifierState;
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
@@ -105,11 +103,12 @@ private:
     UInt32                      _maxsleeppresstime;
 
     // configuration items for swipe actions
-    UInt16                      _actionNotificationCenter[16];
     UInt16                      _actionSwipeUp[16];
     UInt16                      _actionSwipeDown[16];
     UInt16                      _actionSwipeLeft[16];
     UInt16                      _actionSwipeRight[16];
+    UInt16                      _actionNotificationCenter[16];
+
 
     // ACPI support for screen brightness
     IOACPIPlatformDevice *      _provider;

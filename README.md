@@ -1,8 +1,8 @@
 ## This repo is a fork of VoodooPS2Controller by RehabMan
 
 ## The mods are specific to the Lenovo T420 and Lenovo T460 ThinkPad models
-The T420 mods are settings in Info.plist
-The T460 mods are code changes to support the new ClickPad buttons as well as the 3 physical buttons
+The T420 and T460 mods have settings in various Info.plist files 
+The T460 mods are code changes to support the new ClickPad as well as the 3 physical buttons
 
 ### Current Build Environment
 
@@ -51,6 +51,21 @@ Note: often times you will see either of the two problems mentioned above right 
 
 
 ### Change Log:
+
+2016-12-08 v1.8.25
+
+- implment ClickPad for Lenovo T460 - handle physical buttons
+
+- implement middlebutton TrackPoint scroll fix - ignore middle click for scrolling
+
+- use new SysPrefs->Trackpad on 10.12 Sierra (based on usr-sse2 fork)
+
+- precise scrolling fix for 10.12 Sierra (based on usr-sse2 fork)
+
+- implement workaround for capslock bug in 10.12 Sierra
+
+- map brightness keys to F14/F15 for 10.12 Sierra compatibility
+
 
 2016-06-16 v1.8.24
 

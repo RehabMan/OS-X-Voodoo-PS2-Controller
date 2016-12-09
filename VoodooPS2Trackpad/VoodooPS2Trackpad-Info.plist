@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}g</string>
+	<string>${MODULE_VERSION}a</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -160,20 +160,12 @@
 			<data>AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMAAwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABjRl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIAAAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABrPTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucAtn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CXANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAADCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWAAGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLNUQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAkS20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEAAAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAHN4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikADvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrGACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AAAQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAAAAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5NTAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCTvnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABWfwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAhgAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAAqYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAAAV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACegAAF8JGg=</data>
 			<key>HIDScrollAccelerationType</key>
 			<string>HIDTrackpadScrollAcceleration</string>
-			<key>HIDScrollResolutionX</key>
-			<integer>26214400</integer>
-			<key>HIDScrollResolutionY</key>
-			<integer>26214400</integer>
 			<key>IOClass</key>
-			<string>AppleUSBMultitouchDriver</string>
+			<string>ApplePS2SynapticsTouchPad</string>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
-			<key>MT Built-in</key>
-			<true/>
-			<key>MTHIDDevice</key>
-			<true/>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
@@ -196,6 +188,27 @@
 					<integer>300000000</integer>
 					<key>ClickPadTrackBoth</key>
 					<true/>
+					<key>Darwin 16.x</key>
+					<dict>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MT Built-in</key>
+						<true/>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<false/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<false/>
+					</dict>
 					<key>DisableDevice</key>
 					<false/>
 					<key>DisableLEDUpdating</key>
@@ -321,7 +334,7 @@
 					<key>UnitsPerMMY</key>
 					<integer>50</integer>
 					<key>UnsmoothInput</key>
-					<false/>
+					<true/>
 					<key>UseHighRate</key>
 					<true/>
 					<key>VerticalScrollDivisor</key>
@@ -418,6 +431,8 @@
 					<false/>
 					<key>FakeMiddleButton</key>
 					<false/>
+					<key>PalmNoAction When Typing</key>
+					<true/>
 					<key>ScrollResolution</key>
 					<integer>800</integer>
 					<key>SmoothInput</key>
@@ -463,16 +478,6 @@
 			</dict>
 			<key>ProductID</key>
 			<integer>547</integer>
-			<key>SupportsGestureScrolling</key>
-			<true/>
-			<key>TrackpadEmbedded</key>
-			<true/>
-			<key>TrackpadFourFingerGestures</key>
-			<false/>
-			<key>TrackpadSecondaryClickCorners</key>
-			<true/>
-			<key>TrackpadThreeFingerDrag</key>
-			<true/>
 			<key>VendorID</key>
 			<integer>1452</integer>
 		</dict>

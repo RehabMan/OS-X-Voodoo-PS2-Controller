@@ -17,10 +17,10 @@ int main (int argc, char * const argv[]) {
 	CFTypeRef *vals;
 	int i;
 	
-	io_service = IOServiceGetMatchingService(0, IOServiceMatching("AppleUSBMultitouchDriver"));
+	io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!io_service)
 	{
-		printf ("No AppleUSBMultitouchDriver found\n");
+		printf ("No ApplePS2SynapticsTouchPad found\n");
 		return 1;
 	}
 	
