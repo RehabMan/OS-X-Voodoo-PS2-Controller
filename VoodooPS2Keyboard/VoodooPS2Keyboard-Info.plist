@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}a</string>
+	<string>${MODULE_VERSION}b</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -188,15 +188,9 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>
-							//8CbgAAAAACWwEZ
-							</data>
-							<data>
-							//8C7gAAAAAC2wGZ
-							</data>
-							<data>
-							//8C7gAAAAABmQLb
-							</data>
+							<data>//8CbgAAAAACWwEZ</data>
+							<data>//8C7gAAAAAC2wGZ</data>
+							<data>//8C7gAAAAABmQLb</data>
 						</array>
 						<key>MaximumMacroTime</key>
 						<integer>35000000</integer>
@@ -564,6 +558,8 @@
 						<string>37 d, 21 d, 21 u, 37 u</string>
 						<key>ActionSwipeRight</key>
 						<string>37 d, 1e d, 1e u, 37 u</string>
+						<key>SleepPressTime</key>
+						<integer>1500</integer>
 						<key>Swap command and option</key>
 						<true/>
 					</dict>
@@ -627,11 +623,25 @@
 							<string>57=57</string>
 							<string>58=58</string>
 						</array>
-						<key>SleepPressTime</key>
-						<integer>1500</integer>
 					</dict>
 					<key>T460</key>
 					<string>Options</string>
+					<key>T560</key>
+					<dict>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e038=3a</string>
+							<string>e001d=3b</string>
+						</array>
+						<key>ActionSwipeLeft</key>
+						<string>37 d, 21 d, 21 u, 37 u</string>
+						<key>ActionSwipeRight</key>
+						<string>37 d, 1e d, 1e u, 37 u</string>
+						<key>SleepPressTime</key>
+						<integer>1500</integer>
+						<key>Swap command and option</key>
+						<true/>
+					</dict>
 				</dict>
 				<key>SECCSD</key>
 				<dict>

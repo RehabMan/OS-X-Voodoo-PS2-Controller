@@ -112,7 +112,6 @@
 		84F424D4161B593D00777765 /* VoodooPS2synapticsPane.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = VoodooPS2synapticsPane.tiff; sourceTree = "<group>"; };
 		84F424E2161B59E500777765 /* VoodooPS2synapticsPane.prefPane */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooPS2synapticsPane.prefPane; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F424FB161B5A4900777765 /* synapticsconfigload */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = synapticsconfigload; sourceTree = BUILT_PRODUCTS_DIR; };
-		ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Enable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
 		ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Disable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -180,7 +179,6 @@
 			children = (
 				84AE0F6C1BE4479200AF814A /* README.md */,
 				844952F1169A2696003DA49F /* makefile */,
-				ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */,
 				ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */,
 				8372BD351DFA4DEE00D39115 /* SSDT-PS2K-T460.dsl */,
 				84833FC0161B636900845294 /* Common */,

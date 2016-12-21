@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}a</string>
+	<string>${MODULE_VERSION}b</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -398,10 +398,12 @@
 				</dict>
 				<key>LENOVO</key>
 				<dict>
-					<key>BogusDeltaThreshX</key>
-					<integer>400</integer>
-					<key>BogusDeltaThreshY</key>
-					<integer>350</integer>
+					<key>T420</key>
+					<string>TrackPad</string>
+					<key>T460</key>
+					<string>ClickPad</string>
+					<key>T560</key>
+					<string>ClickPad</string>
 					<key>ClickPad</key>
 					<dict>
 						<key>EdgeBottom</key>
@@ -419,28 +421,6 @@
 						<key>MouseScrollMultiplierY</key>
 						<integer>2</integer>
 					</dict>
-					<key>Clicking</key>
-					<true/>
-					<key>DragLock</key>
-					<false/>
-					<key>DragLockTempMask</key>
-					<integer>262148</integer>
-					<key>Dragging</key>
-					<false/>
-					<key>DynamicEWMode</key>
-					<false/>
-					<key>FakeMiddleButton</key>
-					<false/>
-					<key>PalmNoAction When Typing</key>
-					<true/>
-					<key>ScrollResolution</key>
-					<integer>800</integer>
-					<key>SmoothInput</key>
-					<true/>
-					<key>T420</key>
-					<string>TrackPad</string>
-					<key>T460</key>
-					<string>ClickPad</string>
 					<key>TrackPad</key>
 					<dict>
 						<key>DivisorX</key>
@@ -472,6 +452,28 @@
 						<key>ScrollDeltaThreshY</key>
 						<integer>10</integer>
 					</dict>
+					<key>BogusDeltaThreshX</key>
+					<integer>400</integer>
+					<key>BogusDeltaThreshY</key>
+					<integer>350</integer>
+					<key>Clicking</key>
+					<true/>
+					<key>DragLock</key>
+					<false/>
+					<key>DragLockTempMask</key>
+					<integer>262148</integer>
+					<key>Dragging</key>
+					<false/>
+					<key>DynamicEWMode</key>
+					<false/>
+					<key>FakeMiddleButton</key>
+					<false/>
+					<key>PalmNoAction When Typing</key>
+					<true/>
+					<key>ScrollResolution</key>
+					<integer>800</integer>
+					<key>SmoothInput</key>
+					<true/>
 					<key>UnsmoothInput</key>
 					<true/>
 				</dict>
