@@ -792,6 +792,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -813,7 +814,7 @@
 				MODULE_VERSION = 1.8.25;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.8;
 				SYMROOT = build/Products;
 			};
 			name = Debug;
@@ -822,6 +823,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -837,7 +839,7 @@
 				MODULE_VERSION = 1.8.25;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
-				SDKROOT = macosx;
+				SDKROOT = macosx10.8;
 				SYMROOT = build/Products;
 			};
 			name = Release;
