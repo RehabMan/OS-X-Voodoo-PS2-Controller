@@ -1040,6 +1040,8 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // dragnotouch -> draglock(3)
 int cpb = 0;
+int everScrolled = 0;
+int pressedLast = 0;
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     // Note: This is the three byte relative format packet. Which pretty
@@ -1146,6 +1148,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         if (mousemiddlescroll && ((packet[1] & 0x4)||cpb == 4)) // only for physical middle button
         {
             // middle button treats deltas for scrolling
+            if(dx != 0 || dy != 0){
+                everScrolled = 1;
+            }
             SInt32 scrollx = 0, scrolly = 0;
             if (abs(dx) > abs(dy))
                 scrollx = dx * mousescrollmultiplierx;
@@ -1156,9 +1161,17 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        // filter out middle mouse click if middle button scroll is true
-        if (!(mousemiddlescroll && combinedButtons == 4))
+        //if the middle button has ever scrolled since pressing it down don't send a middle click
+        //otherwise send it on release
+        if (everScrolled == false && pressedLast == 1 && combinedButtons != 4)
         {
+            dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
+        }
+        if (combinedButtons == 4){
+            pressedLast = 1;
+        }else{
+            pressedLast = 0;
+            everScrolled = 0;
             dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
         }
 #ifdef DEBUG_VERBOSE
