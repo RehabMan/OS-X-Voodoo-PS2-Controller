@@ -236,6 +236,11 @@ private:
     int threefingerhorizswipe;
     int threefingervertswipe;
     int notificationcenter;
+    
+    //vars for clickpad and middleButton support (thanks jakibaki)
+    int cpb = 0;
+    bool everScrolled = false;
+    bool middleButtonPressed = false;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;

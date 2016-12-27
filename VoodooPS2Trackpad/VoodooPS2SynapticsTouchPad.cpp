@@ -44,6 +44,41 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
+#ifdef DEBUG_VERBOSE
+const char* ApplePS2SynapticsTouchPad::modeName(int touchmode) {
+    switch (touchmode) {
+        case MODE_NOTOUCH:
+            return "MODE_NOTOUCH";
+        case MODE_PREDRAG:
+            return "MODE_PREDRAG";
+        case MODE_DRAGNOTOUCH:
+            return "MODE_DRAGNOTOUCH";
+        case MODE_MOVE:
+            return "MODE_MOVE";
+        case MODE_VSCROLL:
+            return "MODE_VSCROLL";
+        case MODE_HSCROLL:
+            return "MODE_HSCROLL";
+        case MODE_CSCROLL:
+            return "MODE_CSCROLL";
+        case MODE_MTOUCH:
+            return "MODE_MTOUCH";
+        case MODE_DRAG:
+            return "MODE_DRAG";
+        case MODE_DRAGLOCK:
+            return "MODE_DRAGLOCK";
+        case MODE_WAIT1RELEASE:
+            return "MODE_WAIT1RELEASE";
+        case MODE_WAIT2TAP:
+            return "MODE_WAIT2TAP";
+        case MODE_WAIT2RELEASE:
+            return "MODE_WAIT2RELEASE";
+        default:
+            return "INVALID MODE";
+    }
+}
+#endif
+
 //REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
 #include <libkern/OSKextLib.h>
 void* _org_rehabman_dontstrip_[] =
@@ -1039,9 +1074,6 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // dragnotouch -> draglock(3)
-int cpb = 0;
-int everScrolled = 0;
-int pressedLast = 0;
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     // Note: This is the three byte relative format packet. Which pretty
@@ -1141,16 +1173,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
         // were saved.
-        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons | cpb;
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         if (mousemiddlescroll && ((packet[1] & 0x4)||cpb == 4)) // only for physical middle button
         {
             // middle button treats deltas for scrolling
-            if(dx != 0 || dy != 0){
-                everScrolled = 1;
-            }
+            if(dx != 0 || dy != 0)
+                everScrolled = true;
             SInt32 scrollx = 0, scrolly = 0;
             if (abs(dx) > abs(dy))
                 scrollx = dx * mousescrollmultiplierx;
@@ -1161,22 +1192,26 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        //if the middle button has ever scrolled since pressing it down don't send a middle click
-        //otherwise send it on release
-        if (everScrolled == false && pressedLast == 1 && combinedButtons != 4)
+        // check to see if scrolled since middleButton was pressed - only send button on release if never scrolled
+        if (mousemiddlescroll && combinedButtons == 4)
+            middleButtonPressed = true;
+        else
         {
-            dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
+            if( middleButtonPressed )
+            {
+                if(!everScrolled) dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
+            }
+            else
+            {
+                dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+            }
+            middleButtonPressed = false;
+            everScrolled = false;
         }
-        if (combinedButtons == 4){
-            pressedLast = 1;
-        }else{
-            pressedLast = 0;
-            everScrolled = 0;
-            dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
-        }
+        
 #ifdef DEBUG_VERBOSE
         static int count = 0;
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d, middleButton %s, scrolled %s (%d)\n", dx, dy, combinedButtons, middleButtonPressed?"yes":"no", everScrolled?"yes":"no", count++);
 #endif
         return;
     }
@@ -1903,16 +1938,31 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		touchmode=MODE_MOVE;
     
     // dispatch dx/dy and current button status
-    // filter out middle mouse click if middle button scroll is true
-    if (!(mousemiddlescroll && buttons == 4)) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+    // filter out middle mouse click if middle button scrolling - issue middlebutton on release
+    if (mousemiddlescroll && buttons == 4)
+        middleButtonPressed = true;
+    else
+    {
+        if( middleButtonPressed )
+        {
+            if(!everScrolled) dispatchRelativePointerEventX(dx / divisorx, dy / divisory, 4, now_abs);
+        }
+        else
+        {
+            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+        }
+        middleButtonPressed = false;
+        everScrolled = false;
+    }
+
     // always save last seen position for calculating deltas later
 	lastx=x;
 	lasty=y;
     lastf=f;
     
-    #ifdef DEBUG_VERBOSE
-        IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%s,%s,%s) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, modeName(tm1), modeName(tm2), modeName(touchmode), buttons, wasdouble);
-    #endif
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%s,%s,%s) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, modeName(tm1), modeName(tm2), modeName(touchmode), buttons, wasdouble);
+#endif
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
