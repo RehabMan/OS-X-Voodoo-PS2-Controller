@@ -1197,18 +1197,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             middleButtonPressed = true;
         else
         {
-            if( middleButtonPressed )
-            {
-                if(!everScrolled) dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
-            }
-            else
-            {
-                dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
-            }
+            // do middle mouse button upon release
+            if( middleButtonPressed && !everScrolled )
+                dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
+            dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
             middleButtonPressed = false;
             everScrolled = false;
         }
-        
+    
 #ifdef DEBUG_VERBOSE
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d, middleButton %s, scrolled %s (%d)\n", dx, dy, combinedButtons, middleButtonPressed?"yes":"no", everScrolled?"yes":"no", count++);
