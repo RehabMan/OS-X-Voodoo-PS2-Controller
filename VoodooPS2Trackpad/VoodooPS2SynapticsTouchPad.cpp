@@ -28,7 +28,7 @@
 #define FULL_HW_RESET
 //#define SET_STREAM_MODE
 //#define UNDOCUMENTED_INIT_SEQUENCE_PRE
-//#define UNDOCUMENTED_INIT_SEQUENCE_POST
+#define UNDOCUMENTED_INIT_SEQUENCE_POST
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
