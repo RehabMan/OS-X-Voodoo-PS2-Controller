@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}e</string>
+	<string>${MODULE_VERSION}f</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
@@ -273,9 +273,9 @@
 				<key>LENOVO</key>
 				<dict>
 					<key>BogusDeltaThreshX</key>
-					<integer>400</integer>
+					<integer>100</integer>
 					<key>BogusDeltaThreshY</key>
-					<integer>350</integer>
+					<integer>100</integer>
 					<key>ClickPad</key>
 					<dict>
 						<key>EdgeBottom</key>
