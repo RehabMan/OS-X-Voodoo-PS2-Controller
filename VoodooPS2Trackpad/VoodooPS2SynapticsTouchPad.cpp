@@ -174,7 +174,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     mousescrollmultipliery = 20;
     mousemiddlescroll = true;
     wakedelay = 1000;
-    skippassthru = false;
+    skippassthru = true;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
     zonel = 1700;  zoner = 5200;
@@ -243,7 +243,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     keytime = 0;
     ignoreall = false;
     passbuttons = 0;
-    passthru = false;
+    passthru = true;
     ledpresent = false;
     clickpadtype = 0;
     _clickbuttons = 0;
