@@ -400,6 +400,8 @@ private:
     
     void setParamPropertiesGated(OSDictionary* dict);
     void injectVersionDependentProperites(OSDictionary* dict);
+    
+    int trackPointOverride = 0;
 
 protected:
 	virtual IOItemCount buttonCount();

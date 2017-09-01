@@ -1,3 +1,12 @@
+#JC Snider's Modified VoodooPs2Controller based off of Rehabman's Modified VoodooPS2Controller (see below).
+My edits are for my own personal Thinkpad Carbon X1 (3rd Gen) 20BS. As of now (Yosemite 10.10.3 release, April 2015) these edits fix the super sensitive Trackpoint and fix the dedicated buttons so the operate properly.  This mod *might* work for other 2015 Broadwell Thinkpads with the new keyboards/dedicated trackpoint buttons but there are obviously no guarentees.
+
+This project compiles perfectly fine in XCode 6.3 targetting the OSX 10.9 SDK.
+
+You can find the compiled .kext here, works for 64bit machines and maybe 32bit, I never checked.
+http://www.tonymacx86.com/yosemite-laptop-support/162195-thinkpad-x1-carbon-3rd-gen-could-use-some-hints.html#post1024374
+
+
 ## Modified VoodooPS2Controller by RehabMan
 
 
