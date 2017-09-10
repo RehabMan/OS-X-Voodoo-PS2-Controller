@@ -49,6 +49,14 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2017-09-01 v1.8.28
+
+- Fixed VoodooPS2Daemon (USB mouse detection) as it has been broken for Sierra for some time.
+
+2017-07-22 v1.8.27
+
+- Add support for 10.13 High Sierra (currently in beta)
+
 2016-12-08 v1.8.25
 
 - implement ClickPad for Lenovo T460 - handle physical buttons
@@ -62,7 +70,6 @@ Note: often times you will see either of the two problems mentioned above right 
 - implement workaround for capslock issue in 10.12 Sierra
 
 - map brightness keys to F14/F15 for 10.12 Sierra compatibility
-
 
 2016-06-16 v1.8.24
 
