@@ -58,6 +58,8 @@
 					<false/>
 					<key>Swap capslock and left control</key>
 					<false/>
+					<key>CHANGE capslock to left control</key>
+					<false/>
 					<key>Swap command and option</key>
 					<true/>
 					<key>Use ISO layout keyboard</key>
