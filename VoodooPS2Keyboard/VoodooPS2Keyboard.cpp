@@ -844,7 +844,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     }
     //If kSwapCapsLockLeftControl is True, then we do NOT implement this
     if (xml2) {
-        if (xml2->isTrue() && (getProperty(kSwapCapsLockLeftControl) = kOSBooleanFalse)) {
+        if (xml2->isTrue() && (getProperty(kSwapCapsLockLeftControl) == kOSBooleanFalse)) {
             _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x1d];
         }
         setProperty(kChangeCapsLockLeftControl, xml2->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
