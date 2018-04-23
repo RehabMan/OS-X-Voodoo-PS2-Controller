@@ -55,6 +55,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
+#define kChangeCapsLockLeftControl          "CHANGE capslock to left control"
 #define kSwapCommandOption                  "Swap command and option"
 #define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
 #define kMakeApplicationKeyAppleFN          "Make Application key into Apple Fn key"
@@ -829,6 +830,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     // Configure user preferences from Info.plist
     //
     OSBoolean* xml = OSDynamicCast(OSBoolean, dict->getObject(kSwapCapsLockLeftControl));
+    OSBoolean* xml2 = OSDynamicCast(OSBoolean, dict->getObject(kChangeCapsLockLeftControl));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x1d];
@@ -839,6 +841,13 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x1d]  = _PS2ToADBMapMapped[0x1d];
         }
         setProperty(kSwapCapsLockLeftControl, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
+    }
+    //If kSwapCapsLockLeftControl is True, then we do NOT implement this
+    if (xml2) {
+        if (xml2->isTrue() && (getProperty(kSwapCapsLockLeftControl) == kOSBooleanFalse)) {
+            _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x1d];
+        }
+        setProperty(kChangeCapsLockLeftControl, xml2->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
     xml = OSDynamicCast(OSBoolean, dict->getObject(kSwapCommandOption));
