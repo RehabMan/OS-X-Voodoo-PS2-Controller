@@ -451,6 +451,8 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     DEBUG_LOG("VoodooPS2Trackpad: supports EW=%d\n", supportsEW != 0);
     
     // deal with pass through capability
+    skippassthru = 1;
+    passthru = 1;
     if (!skippassthru)
     {
         UInt8 passthru2 = buf3[2] >> 7;
