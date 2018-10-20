@@ -1,5 +1,5 @@
 ## Modified VoodooPS2Controller by RehabMan
-
+ThinkPad TrackPoint fix
 
 ### How to Install:
 
