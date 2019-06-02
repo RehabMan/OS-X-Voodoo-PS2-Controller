@@ -526,27 +526,6 @@ bool ApplePS2Controller::start(IOService * provider)
 #else
   setProperty("RM,Build", "Release-" LOGNAME);
 #endif
-
-  OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
-    
-  IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
-    
-  //
-  // Register notifications for availability of any IOService objects wanting to consume our message events
-  //
-  _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
-                                           propertyMatch,
-                                           notificationHandler,
-                                           this,
-                                           0, 10000);
-    
-   _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
-                                              propertyMatch,
-                                              notificationHandler,
-                                              this,
-                                              0, 10000);
-    
-   propertyMatch->release();
  
  //
  // The driver has been instructed to start.  Allocate all our resources.
@@ -664,6 +643,28 @@ bool ApplePS2Controller::start(IOService * provider)
 
   provider->joinPMtree(this);
     
+  //
+  // Register notifications for availability of any IOService objects wanting to consume our message events
+  //
+  {
+    OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
+    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+
+    _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
+                                             propertyMatch,
+                                             notificationHandler,
+                                             this,
+                                             0, 10000);
+
+    _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
+                                               propertyMatch,
+                                               notificationHandler,
+                                               this,
+                                               0, 10000);
+
+    OSSafeReleaseNULL(propertyMatch);
+  }
+
   //
   // Create the keyboard nub and the mouse nub. The keyboard and mouse drivers
   // will query these nubs to determine the existence of the keyboard or mouse,
